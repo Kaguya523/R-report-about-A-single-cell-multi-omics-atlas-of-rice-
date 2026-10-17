@@ -1,0 +1,48 @@
+# ============================================================
+# .gitignore — 告诉 Git 哪些文件不要提交
+# 规则：只上传「自己写的代码」和「自己跑出的结果」
+# ============================================================
+
+# ---------- 原始数据（体积过大，由使用者按 README 自行下载）----------
+data/*.h5
+data/*.h5ad
+data/*.rds
+data/*.Rds
+data/*.gz
+data/*.tar
+data/*.zip
+
+# ---------- 他人代码与工具包（学术诚信：禁止上传他人代码）----------
+data/official_code/
+data/official_code.zip
+data/rsca_tool.zip
+
+# ---------- 论文原文与截图（版权归原文所有，仅在报告中引用并注明出处）----------
+data/paper_clean.txt
+data/*.png
+data/_*.png
+figs/orig_Fig*.png
+figs/official_pipeline.png
+
+# ---------- R 运行时产生的临时文件 ----------
+.Rhistory
+.RData
+.Rapp.history
+.Rproj.user/
+*.Rproj
+
+# ---------- 输出中间结果（体积大且可重新生成，只保留最终图）----------
+output/*.rds
+output/*.Rds
+output/*.csv
+output/session_versions.csv
+
+# ---------- 系统与编辑器文件 ----------
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
+
+# ---------- 注意 ----------
+# output/ 下的最终图片（.pdf / .png）应当上传，故不在此排除

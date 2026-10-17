@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>水稻单细胞多组学图谱 · 课程复现方案</title>
+<style>
+  :root{
+    --bg:#0d1117; --bg2:#161b22; --bg3:#1c2430; --line:#2d3748;
+    --fg:#e6edf3; --fg2:#9fb0c3; --fg3:#6e7f92;
+    --accent:#58a6ff; --accent2:#7ee787; --warn:#f0b849; --danger:#ff7b72;
+    --purple:#bc8cff; --pink:#f778ba; --cyan:#56d4dd;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif;
+    line-height:1.75; font-size:15px;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:0 26px 90px;}
+  header{
+    padding:52px 0 34px; border-bottom:1px solid var(--line); margin-bottom:34px;
+    background:linear-gradient(180deg,rgba(88,166,255,.09),transparent);
+  }
+  h1{font-size:31px;margin:0 0 12px;letter-spacing:-.4px;line-height:1.3;}
+  h1 .sub{display:block;font-size:15px;color:var(--fg2);font-weight:400;margin-top:10px;letter-spacing:0;}
+  h2{
+    font-size:22px;margin:52px 0 18px;padding:11px 0 11px 16px;
+    border-left:4px solid var(--accent);background:linear-gradient(90deg,rgba(88,166,255,.10),transparent);
+    border-radius:0 6px 6px 0;
+  }
+  h3{font-size:17px;margin:30px 0 12px;color:var(--accent);}
+  h4{font-size:15px;margin:20px 0 8px;color:var(--cyan);}
+  p{margin:10px 0;}
+  a{color:var(--accent);text-decoration:none;border-bottom:1px dotted rgba(88,166,255,.5);}
+  a:hover{color:var(--accent2);border-bottom-color:var(--accent2);}
+  code{
+    font-family:"Cascadia Code","JetBrains Mono",Consolas,monospace;font-size:13px;
+    background:var(--bg3);padding:2px 6px;border-radius:4px;color:var(--pink);
+  }
+  pre{
+    background:var(--bg2);border:1px solid var(--line);border-radius:8px;
+    padding:15px 17px;overflow-x:auto;font-size:12.5px;line-height:1.65;
+  }
+  pre code{background:none;padding:0;color:var(--fg);}
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:13.5px;}
+  th{
+    background:var(--bg3);text-align:left;padding:10px 12px;font-weight:600;
+    border:1px solid var(--line);color:var(--fg);
+  }
+  td{padding:9px 12px;border:1px solid var(--line);vertical-align:top;color:var(--fg2);}
+  tr:nth-child(even) td{background:rgba(255,255,255,.018);}
+  td strong,th strong{color:var(--fg);}
+  .card{
+    background:var(--bg2);border:1px solid var(--line);border-radius:10px;
+    padding:20px 22px;margin:18px 0;
+  }
+  .card.accent{border-left:3px solid var(--accent2);}
+  .card.warn{border-left:3px solid var(--warn);}
+  .card.danger{border-left:3px solid var(--danger);}
+  .badge{
+    display:inline-block;font-size:11.5px;padding:2px 9px;border-radius:20px;
+    margin:0 6px 6px 0;border:1px solid;line-height:1.7;white-space:nowrap;
+  }
+  .b-green{color:var(--accent2);border-color:rgba(126,231,135,.45);background:rgba(126,231,135,.09);}
+  .b-blue{color:var(--accent);border-color:rgba(88,166,255,.45);background:rgba(88,166,255,.09);}
+  .b-warn{color:var(--warn);border-color:rgba(240,184,73,.45);background:rgba(240,184,73,.09);}
+  .b-danger{color:var(--danger);border-color:rgba(255,123,114,.45);background:rgba(255,123,114,.09);}
+  .b-purple{color:var(--purple);border-color:rgba(188,140,255,.45);background:rgba(188,140,255,.09);}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  @media(max-width:820px){.grid2,.grid3{grid-template-columns:1fr;}}
+  .kpi{background:var(--bg3);border:1px solid var(--line);border-radius:9px;padding:15px 17px;}
+  .kpi .n{font-size:25px;font-weight:700;color:var(--accent2);letter-spacing:-.5px;}
+  .kpi .l{font-size:12.5px;color:var(--fg3);margin-top:3px;}
+  figure{margin:22px 0;text-align:center;}
+  figure img{max-width:100%;border:1px solid var(--line);border-radius:8px;background:#fff;}
+  figcaption{font-size:12.5px;color:var(--fg3);margin-top:9px;text-align:left;}
+  .step{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:29px;height:29px;border-radius:50%;background:var(--accent);color:#04121f;
+    font-weight:700;font-size:14px;margin-right:11px;flex-shrink:0;
+  }
+  .h2flex{display:flex;align-items:center;}
+  ol,ul{padding-left:24px;}
+  li{margin:6px 0;color:var(--fg2);}
+  li strong{color:var(--fg);}
+  .toc{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:18px 24px;}
+  .toc ol{margin:0;columns:2;column-gap:34px;}
+  @media(max-width:820px){.toc ol{columns:1;}}
+  .toc li{color:var(--fg2);}
+  .footnote{font-size:12.5px;color:var(--fg3);border-top:1px solid var(--line);margin-top:52px;padding-top:20px;}
+  .ok::before{content:"✅ ";}
+  .no::before{content:"⚠️ ";}
+  .hl{background:rgba(240,184,73,.16);padding:1px 5px;border-radius:3px;color:var(--warn);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>A single-cell multi-omics atlas of rice
+    <span class="sub">水稻单细胞多组学图谱 —— 课程复现方案（逐步导读版）</span>
+  </h1>
+  <div>
+    <span class="badge b-green">Nature 644, 722–729 (21 Aug 2025)</span>
+    <span class="badge b-blue">DOI 10.1038/s41586-025-09251-0</span>
+    <span class="badge b-purple">scRNA + scATAC 同细胞多组学</span>
+    <span class="badge b-warn">116,564 nuclei / 8 organs</span>
+  </div>
+</header>
+
+<div class="toc">
+  <strong style="color:var(--fg)">导读目录</strong>
+  <ol>
+    <li><a href="#s0">课程要求逐条对照</a></li>
+    <li><a href="#s1">论文基本信息</a></li>
+    <li><a href="#s2">研究背景与核心科学问题</a></li>
+    <li><a href="#s3">数据类型、规模与数据来源</a></li>
+    <li><a href="#s4">方法链（含版本号与阈值）</a></li>
+    <li><a href="#s5">拟复现的核心图</a></li>
+    <li><a href="#s6">复现流程：两条路线</a></li>
+    <li><a href="#s7">结果对比、差异原因与失败预案</a></li>
+    <li><a href="#s8">心得与改进建议</a></li>
+    <li><a href="#s9">提交材料、分工与时间线</a></li>
+    <li><a href="#s10">学术诚信说明</a></li>
+  </ol>
+</div>
+
+<!-- ================================================================= -->
+<h2 id="s0"><span class="h2flex"><span class="step">0</span>课程要求逐条对照</h2>
+
+<p>先确认这篇论文能不能用——课程的四条硬性门槛：</p>
+
+<table>
+  <tr><th style="width:34%">课程要求</th><th style="width:12%">是否满足</th><th>依据</th></tr>
+  <tr>
+    <td>2023 年 1 月以来发表于 Nature/Science/Cell 及子刊</td>
+    <td><span class="badge b-green">满足</span></td>
+    <td>Nature 主刊，2025 年 8 月 21 日出版</td>
+  </tr>
+  <tr>
+    <td>包含可公开获取的数据集</td>
+    <td><span class="badge b-green">满足</span></td>
+    <td>GEO 三个登录号（<code>GSE232863</code> / <code>GSE273875</code> / <code>GSE245410</code>），
+        且提供<strong>处理好的 Seurat 对象</strong>与作者官方代码</td>
+  </tr>
+  <tr>
+    <td>数据类型属于课程建议范围</td>
+    <td><span class="badge b-green">满足</span></td>
+    <td>单细胞（scRNA-seq + scATAC-seq）+ 多组学整合 + bulk RNA-seq</td>
+  </tr>
+  <tr>
+    <td>复现不少于 2 张核心图</td>
+    <td><span class="badge b-green">满足</span></td>
+    <td>本方案规划 4 张，其中 2 张为必做（Fig. 1b/1d/1e、Fig. 4u/4w）</td>
+  </tr>
+</table>
+
+<div class="card accent">
+  <strong>本篇论文最大的复现优势：作者把"半成品"都公开了。</strong>
+  <ul>
+    <li><strong>成品数据对象</strong>：<code>GSE232863_scRNA_omics.Rds</code>（5.1 GB，已整合注释好的 Seurat 对象）、
+        <code>GSE273875_LTP_NIP_label_240622.rds.gz</code>（390 MB，已带 <code>cell_type</code> 注释）</li>
+    <li><strong>官方代码</strong>：Zenodo <code>10.5281/zenodo.15501781</code>，共 16 个脚本，
+        其 README <strong>逐条标注了"哪个脚本产出哪张图"</strong></li>
+    <li><strong>在线门户</strong>：<a href="http://www.elabcaas.cn/scmr/index.html" target="_blank">elabcaas.cn/scmr</a> 可交互浏览，便于核对结果</li>
+  </ul>
+  <p style="margin-bottom:0">这意味着我们<strong>不必从 fastq 开始</strong>，可以把宝贵时间投到"统计建模 + 可视化 + 结果对比"上——而"结果对比与差异分析"恰恰是评分表里占分最高、最容易失分的部分。</p>
+</div>
+
+<!-- ================================================================= -->
+<h2 id="s1"><span class="h2flex"><span class="step">1</span>论文基本信息</h2>
+
+<table>
+  <tr><th style="width:22%">项目</th><th>内容</th></tr>
+  <tr><td>标题</td><td>A single-cell multi-omics atlas of rice</td></tr>
+  <tr><td>第一作者</td><td>Xiangyu Wang、Huanwei Huang、Sanjie Jiang、Jingmin Kang、Dongwei Li、Kailai Wang（共 6 位并列第一）</td></tr>
+  <tr><td>通讯作者</td><td><strong>Zhe Liang</strong>（liangzhe@caas.cn）、<strong>Xiaofeng Gu</strong>（guxiaofeng@caas.cn）</td></tr>
+  <tr><td>通讯单位</td><td>中国农业科学院生物技术研究所（Biotechnology Research Institute, CAAS）</td></tr>
+  <tr><td>合作单位</td><td>首都医科大学、华大基因（BGI）、加州大学河滨分校、海德堡大学、鲁汶大学</td></tr>
+  <tr><td>期刊 / 卷期页</td><td>Nature, Vol. 644, pp. 722–729</td></tr>
+  <tr><td>发表时间</td><td>2025 年 8 月 21 日</td></tr>
+  <tr><td>DOI</td><td><a href="https://doi.org/10.1038/s41586-025-09251-0" target="_blank">10.1038/s41586-025-09251-0</a></td></tr>
+  <tr><td>文章类型</td><td>Article（研究论文，非综述）</td></tr>
+  <tr><td>数据门户</td><td><a href="http://www.elabcaas.cn/scmr/index.html" target="_blank">http://www.elabcaas.cn/scmr/index.html</a></td></tr>
+</table>
+
+<div class="grid3">
+  <div class="kpi"><div class="n">116,564</div><div class="l">高质量细胞核（8 器官）</div></div>
+  <div class="kpi"><div class="n">56</div><div class="l">UMAP 聚类（54 个完成注释）</div></div>
+  <div class="kpi"><div class="n">44,248</div><div class="l">穗发育 4 期追加的多组学细胞核</div></div>
+</div>
+
+<!-- ================================================================= -->
+<h2 id="s2"><span class="h2flex"><span class="step">2</span>研究背景与核心科学问题</h2>
+
+<h3>背景逻辑（一句话链条）</h3>
+<div class="card">
+  <p style="margin:0">
+  多细胞生物的器官功能靠<strong>细胞分工</strong>实现 →
+  细胞身份由<strong>特定基因表达程序</strong>决定 →
+  表达程序又受<strong>染色质结构（可及性）</strong>调控 →
+  所以<strong>只看转录组会漏掉调控层的信息</strong>。
+  </p>
+</div>
+
+<h3>前人工作的空白</h3>
+<ul>
+  <li>已有拟南芥、水稻、玉米、大豆、小麦的单细胞<strong>转录组</strong>图谱，但多数只覆盖 1–2 个组织；</li>
+  <li>玉米虽有跨器官 scATAC，但<strong>缺配套的 scRNA</strong>，无法直接比较"表达 vs 染色质状态"；</li>
+  <li>少数研究用<strong>计算方法</strong>把分别测的 scATAC 和 scRNA 拼起来，但这类方法<strong>假设两层组学反映同一细胞身份</strong>——一旦两层不同步就会出错；</li>
+  <li><strong>植物中尚无系统性的单细胞多组学（同细胞同时测 RNA+ATAC）图谱。</strong></li>
+</ul>
+
+<h3>核心科学问题（提炼为 3 问）</h3>
+<div class="grid2">
+  <div class="card accent">
+    <h4 style="margin-top:0">Q1｜技术层面</h4>
+    <p style="margin-bottom:0">能否用 10X 多组学在同一细胞核内<strong>同时</strong>测定染色质可及性与基因表达，构建覆盖水稻 8 大器官的细胞类型图谱，并借此<strong>定量评估"计算配对"方法的可靠性</strong>？</p>
+  </div>
+  <div class="card accent">
+    <h4 style="margin-top:0">Q2｜生物学层面</h4>
+    <p style="margin-bottom:0">跨器官共享的细胞类型（如表皮、维管），其<strong>基因表达程序与谱系历史在器官之间、物种之间是保守还是分化</strong>？</p>
+  </div>
+  <div class="card accent">
+    <h4 style="margin-top:0">Q3｜应用层面</h4>
+    <p style="margin-bottom:0">能否从单细胞<strong>调控网络 / 共表达网络</strong>中挖掘出新的细胞类型特异调控枢纽基因（作者找到 <strong>RSR1、F3H、LTPL120</strong>），并与农艺性状建立关联？</p>
+  </div>
+</div>
+
+<p><strong>Fig. 1c 是 Q1 的直接答案：</strong>作者用真实多组学数据当"金标准"，去检验把分别测的 scRNA/scATAC 用 Seurat 标签迁移做配对能有多准——结果各器官准确率只有 <strong>38%（冠根）到 82%（旗叶）</strong>，且与测序深度和器官发育动态有关。这是"为什么必须做真多组学"的关键证据。</p>
+
+<!-- ================================================================= -->
+<h2 id="s3"><span class="h2flex"><span class="step">3</span>数据类型、样本规模与数据来源</h2>
+
+<p>三个 GEO 数据集，我逐个核实了 FTP 上的实际文件与体积（这一步很关键——只有登录号不足以判断"能不能真的复现"）：</p>
+
+<table>
+  <tr>
+    <th style="width:14%">GEO 登录号</th><th style="width:26%">内容</th>
+    <th style="width:9%">样本数</th><th>关键补充文件（实测）</th>
+  </tr>
+  <tr>
+    <td><strong>GSE232863</strong><br><span style="font-size:11.5px;color:var(--fg3)">主图谱</span></td>
+    <td>8 器官 scRNA + scATAC（分别测）+ 穗发育 4 期多组学</td>
+    <td>44</td>
+    <td>
+      <code>GSE232863_scRNA_omics.Rds</code> <strong>5.1 GB</strong> —— 已整合的 Seurat 对象 ★<br>
+      <code>GSE232863_RAW.tar</code> <strong>8.0 GB</strong> = 6× <code>filtered_feature_bc_matrix.h5</code>（≈100 MB）+ 6× <code>atac_fragments.tsv.gz</code>（≈1.2 GB）
+    </td>
+  </tr>
+  <tr>
+    <td><strong>GSE273875</strong><br><span style="font-size:11.5px;color:var(--fg3)">突变体</span></td>
+    <td>osltpl120-1/-2 vs Nip（野生型）根 scRNA</td>
+    <td>4</td>
+    <td><code>GSE273875_LTP_NIP_label_240622.rds.gz</code> <strong>390 MB</strong> —— 已带 <code>cell_type</code> 注释的 Seurat 对象 ★</td>
+  </tr>
+  <tr>
+    <td><strong>GSE245410</strong><br><span style="font-size:11.5px;color:var(--fg3)">bulk RNA</span></td>
+    <td>osf3h 敲低 vs ZH11（野生型）叶 / 根 bulk RNA-seq</td>
+    <td>12</td>
+    <td><code>GSE245410_raw_counts.txt.gz</code> <strong>681 KB</strong> —— 原始 counts，可完整走 bulk 流程</td>
+  </tr>
+</table>
+
+<div class="card warn">
+  <strong>一个容易写错的细节（建议写进报告，属于加分项）：</strong>
+  <p style="margin-bottom:0">
+  <code>GSE232863_RAW.tar</code> 里<strong>只有 6 个真正的多组学样本</strong>（穗 SP3/SP4/SP6/SP8）。
+  8 器官主图谱的 RNA 与 ATAC 在 GEO 中是<strong>分开提交</strong>的（每个器官 Rep1/Rep2 各一份），
+  并非"同一细胞的两种组学"。这正是论文 Fig. 1c 要评估"计算配对 vs 真实多组学"的动机所在。
+  </p>
+</div>
+
+<h3>补充参考资源</h3>
+<table>
+  <tr><th style="width:30%">资源</th><th>链接 / 说明</th></tr>
+  <tr><td>官方代码仓库</td><td><a href="https://doi.org/10.5281/zenodo.15501781" target="_blank">10.5281/zenodo.15501781</a>（7.75 MB，16 个脚本，含 <code>data/rice.motif.pfmList2.Rds</code>）</td></tr>
+  <tr><td>根细胞类型注释工具 RSCA</td><td><a href="https://doi.org/10.5281/zenodo.15501779" target="_blank">10.5281/zenodo.15501779</a>（4.8 MB，CatBoost 模型）</td></tr>
+  <tr><td>参考基因组</td><td><strong>Rice MSU 7.0</strong>，注释用 <code>EnsDb.Osativa.v55</code> <span class="hl">必须与论文一致</span></td></tr>
+  <tr><td>Motif 数据库</td><td>PlantTFDB v5.0（<a href="https://planttfdb.gao-lab.org/" target="_blank">planttfdb.gao-lab.org</a>）</td></tr>
+  <tr><td>跨物种数据</td><td>玉米 / 拟南芥 / <em>Setaria viridis</em> / <em>Sorghum bicolor</em> 根尖 scRNA，来自 Guillotin <em>et al., Nature</em> 617:785–791 (2023)</td></tr>
+</table>
+
+<!-- ================================================================= -->
+<h2 id="s4"><span class="h2flex"><span class="step">4</span>方法链（含版本号与关键阈值）</h2>
+
+<p>这张表是复现报告"复现流程"一节的骨架。<strong>版本号一定要抄进报告</strong>——它是解释复现差异的第一依据。</p>
+
+<h3>4.1 上游：建库 → 比对 → 定量</h3>
+<table>
+  <tr><th style="width:22%">步骤</th><th style="width:28%">软件 / 版本</th><th>关键参数</th></tr>
+  <tr><td>建库测序</td><td>10X Chromium Next GEM Single Cell Multiome ATAC + Gene Expression；Illumina NovaSeq 6000</td><td>RNA: PE150；ATAC: PE50；每样本约 20,000 nuclei 上样</td></tr>
+  <tr><td>fastq 转换</td><td><code>cellranger-arc mkfastq</code></td><td>—</td></tr>
+  <tr><td>比对 + 定量</td><td><strong>CellRanger ARC v2.0.2</strong></td><td>参考基因组 Rice MSU 7.0</td></tr>
+  <tr><td>环境 RNA 去除</td><td><strong>CellBender v0.3.2</strong></td><td><code>remove-background</code>；<code>--epochs 150</code>，learning rate <code>1e-4</code></td></tr>
+</table>
+
+<h3>4.2 中游：质控 → 整合 → 降维</h3>
+<table>
+  <tr><th style="width:22%">步骤</th><th style="width:28%">软件 / 版本</th><th>关键参数</th></tr>
+  <tr><td>质控</td><td><strong>Seurat v5.1.0</strong></td><td>剔除 <code>nFeature_RNA &lt; 500</code> 或 <code>nCount_RNA &lt; 1000</code> 的细胞</td></tr>
+  <tr><td>双细胞去除</td><td><strong>DoubletFinder v2.0.3</strong></td><td><code>PC = 1:30</code>，<code>pN = 0.25</code>，<code>pK</code> 由 <code>find.pK()</code> 自动选最优</td></tr>
+  <tr><td>ATAC 降维</td><td><strong>Signac v0.2.5</strong></td><td><code>FindTopFeatures</code> → <code>RunTFIDF</code> → <code>RunSVD</code>（LSI）</td></tr>
+  <tr><td>RNA 降维</td><td>Seurat v5.1.0</td><td><code>NormalizeData</code> → <code>FindVariableFeatures</code>(vst, 2000) → <code>ScaleData</code> → <code>RunPCA</code>(npcs=50)</td></tr>
+  <tr><td>批次校正</td><td><strong>Harmony v0.1.0</strong></td><td><code>RunHarmony()</code>，按 <code>tissue</code> 分组</td></tr>
+  <tr><td>多模态整合</td><td>Seurat <code>FindMultiModalNeighbors</code></td><td>RNA 取 <strong>PC 1:30</strong>，ATAC 取 <strong>LSI 2:30</strong>（WNN 加权最近邻）</td></tr>
+  <tr><td>UMAP</td><td>Seurat <code>RunUMAP</code></td><td>
+    <span class="hl">论文 Methods：<code>n.neighbours=30, n.epochs=200, min.dist=0.05, spread=4</code></span><br>
+    <span style="color:var(--warn)">官方脚本 05 却写：<code>n.neighbors=100, min.dist=0.1, spread=10</code></span> —— <strong>两处不一致，复现时需说明以哪个为准</strong>
+  </td></tr>
+</table>
+
+<h3>4.3 下游：统计建模与网络推断</h3>
+<table>
+  <tr><th style="width:22%">分析</th><th style="width:24%">软件 / 版本</th><th>关键参数</th></tr>
+  <tr><td>细胞类型标记基因</td><td>Seurat <code>FindAllMarkers</code>（Wilcoxon 秩和）</td><td>|log₂FC| &gt; 0.25；表达于 &gt; 25% 目标簇细胞；adj.P &lt; 0.05</td></tr>
+  <tr><td>突变体差异分析</td><td>Seurat <code>FindMarkers</code>（Wilcoxon）</td><td>adj.P &lt; 0.05 且 |log₂FC| &gt; 0.5</td></tr>
+  <tr><td>Motif 富集</td><td><strong>ChIPseeker</strong> <code>peakAnnoEnrichment</code></td><td>FDR ≤ 0.1 且 log₂(fold enrichment) ≥ 0.5</td></tr>
+  <tr><td>调控网络（regulon）</td><td><strong>pySCENIC v0.12.1</strong></td><td>GRNBoost2，<code>n_jobs=8</code>，<code>seed=42</code>；RcisTarget 库基于 MSU7</td></tr>
+  <tr><td>细胞状态扰动</td><td><strong>CellOracle</strong></td><td>Cicero co-accessibility ≥ 0.5；<code>score_cutoff=0.7</code>；<code>k=777, b_sight=777×8, b_maxl=777×4</code>；保留 top 10,000 边；传播深度 5</td></tr>
+  <tr><td>共表达网络</td><td><strong>hdWGCNA v0.2.24</strong> + Cytoscape v3.9.1</td><td><code>soft_power=9</code>，<code>networkType='signed'</code>，<code>corType='bicor'</code>，<code>kME_method='pearson'</code></td></tr>
+  <tr><td>拟时序</td><td><strong>Monocle3 v1.3.7</strong> + CytoTRACE v0.1.0 + Slingshot v2.0.0</td><td>100 PCs；<code>umap.min_dist=0.5, n_neighbours=100, spread=1.5</code>；根状态由 CytoTRACE 定</td></tr>
+  <tr><td>性状关联</td><td><strong>ArchR v1.0.2</strong> <code>addGeneScoreMatrix</code></td><td>min-max 标准化 <code>(x−min)/(max−min)</code> 后算 trait–celltype 关系</td></tr>
+  <tr><td>跨物种整合</td><td>OrthoFinder v2.5.4 + MetaNeighbor v1.9.1</td><td>同源基因簇内表达求和；Seurat 整合 top 3,000 HVG；DEG 用 Wilcoxon，FDR 5%</td></tr>
+  <tr><td>bulk RNA-seq</td><td>Trimmomatic v0.39 → HISAT2 v2.2.1 → StringTie v2.1.4 → DESeq → agriGO v2.0</td><td>PE150；见论文 Methods</td></tr>
+</table>
+
+<!-- ================================================================= -->
+<h2 id="s5"><span class="h2flex"><span class="step">5</span>拟复现的核心图</h2>
+
+<p>下面四张图我都渲染了原版图版（论文双栏排版，图注与图版常不在同一页，只看文字容易猜错图型，所以必须亲眼看图）。<strong>前两张为必做</strong>，后两张视时间决定。</p>
+
+<h3>① 必做｜Fig. 1b / 1d / 1e —— 图谱总览</h3>
+<figure>
+  <img src="figs/orig_Fig1_p722.png" alt="Fig 1 原图">
+  <figcaption>原论文 Fig. 1（Nature 644:722）。a 工作流示意；b 全细胞 UMAP（按器官着色）+ 各器官细胞数；c 计算配对准确率对比；d UMAP 按细胞类型注释；e 各器官细胞类型占比；f 各器官 UMAP 与代表性标记基因的原位杂交。</figcaption>
+</figure>
+
+<table>
+  <tr><th style="width:16%">要素</th><th>内容</th></tr>
+  <tr><td>输入数据</td><td><code>GSE232863_scRNA_omics.Rds</code>（5.1 GB，含 RNA + ATAC 两个 assay 与已注释的细胞类型）</td></tr>
+  <tr><td>复现要点</td><td>① 按器官着色画 UMAP；② 统计各器官细胞数并画横向柱状图；③ 按细胞类型着色画 UMAP（Fig. 1d）；④ 计算各器官内细胞类型占比并画堆叠柱（Fig. 1e）</td></tr>
+  <tr>
+    <td><strong>成功判定</strong></td>
+    <td>
+      细胞总数 = <strong>116,564</strong>；各器官细胞数：
+      Crown root <strong>31,108</strong>、Culm <strong>19,740</strong>、Leaf <strong>13,771</strong>、Flag leaf <strong>5,563</strong>、
+      Shoot apex <strong>13,791</strong>、Tiller bud <strong>8,858</strong>、Panicle <strong>17,457</strong>、Seed <strong>6,276</strong>
+      —— 八项相加严格等于 116,564（我已从原图高分辨率读出并交叉验证）<br>
+      形态上：UMAP 中"生理相近的器官相邻"（如旗叶靠近叶），部分共享细胞类型（叶肉）出现重叠
+    </td>
+  </tr>
+  <tr><td>难度</td><td><span class="badge b-green">低</span>——成品对象直接出图，但需 ≥32 GB 内存</td></tr>
+</table>
+
+<h3>② 必做｜Fig. 4u / 4w —— 突变体各细胞类型差异表达</h3>
+<figure>
+  <img src="figs/orig_Fig4_p728.png" alt="Fig 4 原图">
+  <figcaption>原论文 Fig. 4（Nature 644:728）。a,b 性状–细胞类型关联 Sankey 图；c 共表达网络；d–f OsLTPL120 表达与原位杂交；g 突变位点；h–t 表型比较；<strong>u 各细胞类型 WT vs osltpl120 的 DEG 数；v 皮层 DEG 散点；w 关键基因表达热图</strong>。</figcaption>
+</figure>
+
+<table>
+  <tr><th style="width:16%">要素</th><th>内容</th></tr>
+  <tr><td>输入数据</td><td><code>GSE273875_LTP_NIP_label_240622.rds.gz</code>（390 MB，已带 <code>cell_type</code> 注释）</td></tr>
+  <tr><td>复现要点</td><td>① 构造 <code>condition_celltype</code> 分组；② 对每个细胞类型做 <code>FindMarkers</code>（突变体 vs WT）；③ 按 <code>p_val_adj &lt; 0.05 &amp; |log₂FC| &gt; 0.5</code> 统计上/下调基因数；④ 出 Fig. 4u 柱状图；⑤ 取 OsNRT1.1A / OsAAP1 / OsBHLH044 出 Fig. 4w 热图</td></tr>
+  <tr>
+    <td><strong>成功判定</strong></td>
+    <td>
+      <strong>皮层（cortex）的 DEG 数在各细胞类型中最多</strong>——论文原文："Differential expression analysis revealed the highest number of DEGs in cortical cells"，与 OsLTPL120 在皮层特异表达一致；<br>
+      OsNRT1.1A / OsAAP1 / OsBHLH044 在突变体中上调，且<strong>皮层中的倍数变化高于其他细胞类型</strong>
+    </td>
+  </tr>
+  <tr><td>难度</td><td><span class="badge b-green">低–中</span>——数据小（390 MB），逻辑清晰，含真实的差异表达统计</td></tr>
+  <tr><td>推荐理由</td><td>这是<strong>性价比最高的一张</strong>：数据量小、内存需求低（8–16 GB），却完整覆盖"统计建模"环节，且能直接做定量比对</td></tr>
+</table>
+
+<h3>③ 进阶｜Fig. 2a —— scRNA 与 scATAC 的细胞类型相关性</h3>
+<figure>
+  <img src="figs/orig_Fig2_p724.png" alt="Fig 2 原图">
+  <figcaption>原论文 Fig. 2（Nature 644:724）。<strong>a scRNA-seq 与 scATAC 各细胞类型的相关性热图</strong>；b 254 个转录因子的 motif 富集热图；c–e 激活/抑制型转录因子预测；f–j CellOracle 网络与 RSR1 扰动模拟；k–q 突变体表型验证。</figcaption>
+</figure>
+
+<table>
+  <tr><th style="width:16%">要素</th><th>内容</th></tr>
+  <tr><td>输入数据</td><td>同 ①（需同时含 RNA 与 ATAC assay）</td></tr>
+  <tr><td>复现要点</td><td>① RNA 侧：按细胞类型求平均表达 → Pearson 相关；② ATAC 侧：每类取 top 500 差异 peak → 平均可及性 → Pearson 相关；③ 交叉：<code>GeneActivity()</code> 把 peak 活性映射回基因 → 与 RNA 平均表达求 Spearman</td></tr>
+  <tr><td><strong>成功判定</strong></td><td>热图呈明显的对角块状结构；叶与旗叶的叶肉、维管、保卫细胞、表皮相关性<strong>高</strong>；种子表皮相关性<strong>中等</strong></td></tr>
+  <tr><td>难度</td><td><span class="badge b-warn">中</span>——<code>GeneActivity</code> 在 116k 细胞上较慢；官方脚本此处有拼写错误需自行修正</td></tr>
+</table>
+
+<h3>④ 进阶｜Fig. 3a —— 碳氮代谢基因的细胞类型分层</h3>
+<figure>
+  <img src="figs/orig_Fig3_p727.png" alt="Fig 3 原图">
+  <figcaption>原论文 Fig. 3（Nature 644:727）。<strong>a 碳氮吸收相关基因在细胞类型间的表达（上，scRNA）与染色质可及性（下，scATAC）热图</strong>；b,c 共表达网络；d–o OsF3H 的功能验证。</figcaption>
+</figure>
+
+<table>
+  <tr><th style="width:16%">要素</th><th>内容</th></tr>
+  <tr><td>输入数据</td><td>同 ①</td></tr>
+  <tr><td>复现要点</td><td>按论文列出的 5 类碳氮基因（氮吸收、氨基酸合成、蔗糖/氨基酸转运、蔗糖代谢、TCA 循环）取基因集 → 画细胞类型 × 基因的表达热图与可及性热图，上下两层并排</td></tr>
+  <tr><td><strong>成功判定</strong></td><td>碳氮基因呈明显细胞类型特异分层；scRNA 与 scATAC 两层趋势一致</td></tr>
+  <tr><td>难度</td><td><span class="badge b-warn">中</span>——需要基因集定义与 ArchR gene score</td></tr>
+</table>
+
+<!-- ================================================================= -->
+<h2 id="s6"><span class="h2flex"><span class="step">6</span>复现流程：两条路线</h2>
+
+<div class="card accent">
+  <h4 style="margin-top:0">路线 A（推荐 · 保底）—— 用成品对象直接出图</h4>
+  <pre><code>下载 Rds → 探查对象结构 → 复算细胞数 / UMAP 坐标 → 出图 → 与原图逐面板比对</code></pre>
+  <p><strong>预计 2–4 小时</strong>（不含下载时间）。风险最低，把时间投到"结果对比与差异分析"上。</p>
+</div>
+
+<div class="card">
+  <h4 style="margin-top:0">路线 B（完整）—— 从下机数据走全流程</h4>
+  <pre><code>SRA fastq → cellranger-arc mkfastq → CellRanger ARC count → CellBender
+→ Seurat 质控 → DoubletFinder → Harmony → WNN 整合 → RunUMAP
+→ 细胞类型注释 → 差异分析 → 可视化</code></pre>
+  <p>完整覆盖课程要求的"数据下载→质控→比对/拼接→统计建模→可视化"。代价：需下载 8 GB、CellRanger ARC 需 <strong>≥64 GB 内存</strong>、单样本数小时。</p>
+</div>
+
+<div class="card warn">
+  <h4 style="margin-top:0">★ 建议的组合方案（兼顾完整度与可行性）</h4>
+  <ol style="margin-bottom:0">
+    <li><strong>主图①用路线 A</strong>出全量 116,564 细胞的结果 —— 保证结果与原论文可比；</li>
+    <li><strong>另挑 1 个多组学样本走路线 B</strong>（用 <code>filtered_feature_bc_matrix.h5</code> 直接进 Seurat 做质控 + DoubletFinder + UMAP），在报告里展示：
+      <ul>
+        <li>质控前 / 后的小提琴图（nFeature_RNA、nCount_RNA、percent.mt）</li>
+        <li>TSS enrichment 与 nucleosome signal 曲线</li>
+        <li>clustree 图展示不同分辨率的聚类稳定性</li>
+      </ul>
+    </li>
+    <li>这样既拿到全量可比结果，又用实验证据证明"流程完整度"——直接对应评分表 35% 的复现完整度与 20% 的代码质量。</li>
+  </ol>
+</div>
+
+<h3>算力与时间估计</h3>
+<table>
+  <tr><th style="width:38%">步骤</th><th style="width:22%">数据量</th><th style="width:16%">内存</th><th>时间</th></tr>
+  <tr><td>下载 <code>GSE273875</code> Rds</td><td>390 MB</td><td>—</td><td>3–10 min</td></tr>
+  <tr><td>下载 <code>GSE232863_scRNA_omics.Rds</code></td><td>5.1 GB</td><td>—</td><td>30 min – 2 h</td></tr>
+  <tr><td>读取 5.1 GB Rds（Seurat）</td><td>—</td><td><strong>≥32 GB</strong></td><td>5–15 min</td></tr>
+  <tr><td>Fig. 1b/1d/1e 出图</td><td>116,564 细胞</td><td>≥32 GB</td><td>10–30 min</td></tr>
+  <tr><td>Fig. 4u/4w 出图</td><td>~36,000 细胞</td><td>8–16 GB</td><td>10–20 min</td></tr>
+  <tr><td>Fig. 2a 出图（含 GeneActivity）</td><td>116,564 细胞</td><td>≥32 GB</td><td>1–3 h</td></tr>
+  <tr><td>路线 B 单样本 CellRanger ARC</td><td>~40 GB fastq</td><td>≥64 GB</td><td>3–8 h</td></tr>
+  <tr><td>路线 B 单样本 Seurat + DoubletFinder</td><td>—</td><td>16 GB</td><td>20–40 min</td></tr>
+</table>
+
+<h3>省流量策略（务必写进报告的"数据集可访问性说明"）</h3>
+<pre><code># 只下最小复现集（约 0.4 GB），先跑通 Fig.4u/4w
+bash scripts/00_download.sh minimal
+
+# 再加下主图谱 Seurat 对象（共约 5.5 GB）
+bash scripts/00_download.sh medium
+
+# 不要整包下载 8 GB 的 RAW.tar！
+# 里面 6 个 atac_fragments.tsv.gz 各 1.2 GB，仅在需要 peak-level 分析时才要。
+# 只取需要的表达矩阵（每个约 100 MB）：
+curl -k -L -O "https://ftp.ncbi.nlm.nih.gov/geo/samples/GSM8865nnn/GSM8865405/suppl/GSM8865405_E03_1_filtered_feature_bc_matrix.h5"</code></pre>
+
+<!-- ================================================================= -->
+<h2 id="s7"><span class="h2flex"><span class="step">7</span>结果对比、差异原因与失败预案</h2>
+
+<p>这一节对应评分表里"复现完整度 35%"与"问答表现 20%"，是拉开差距的地方。<strong>提前把差异原因和排查方向写好，答辩时就不会被问住。</strong></p>
+
+<table>
+  <tr><th style="width:20%">环节</th><th style="width:20%">原文结果</th><th style="width:22%">预期复现结果</th><th>若不一致，排查方向</th></tr>
+  <tr>
+    <td>细胞总数</td>
+    <td>116,564</td>
+    <td>应严格一致（成品对象）</td>
+    <td>若不一致 → 说明读取时对象被改动；检查是否误加了过滤条件</td>
+  </tr>
+  <tr>
+    <td>各器官细胞数</td>
+    <td>冠根 31,108 … 种子 6,276</td>
+    <td>应逐项一致</td>
+    <td>器官名归一化是否漏项（如 <code>Third Leaf</code> → <code>Leaf</code>、<code>ST</code> → <code>Culm</code>）；重复细胞是否被重复计数</td>
+  </tr>
+  <tr>
+    <td>UMAP 形态</td>
+    <td>器官分群，生理相近者相邻</td>
+    <td>大致格局一致，细节不同</td>
+    <td><strong>正常差异</strong>：UMAP 依赖随机种子与 <code>n.neighbors/min.dist/spread</code>；论文 Methods 与官方脚本 05 的参数本身就不一致</td>
+  </tr>
+  <tr>
+    <td>聚类数</td>
+    <td>56 个簇</td>
+    <td>若重跑聚类，簇数会变</td>
+    <td><code>FindClusters</code> 的 resolution 与随机种子；<strong>建议直接沿用对象里已有的簇标签，不要重跑聚类</strong></td>
+  </tr>
+  <tr>
+    <td>Fig. 4u DEG 最多者</td>
+    <td>cortex（皮层）</td>
+    <td>应为 cortex</td>
+    <td>① <code>condition</code> 分组是否反了（WT 与突变体互换）；② 是否误用 <code>orig.ident</code> 而非 <code>condition</code>；③ 阈值是否用了 0.5 而非 0.1；④ 细胞类型列是否用错</td>
+  </tr>
+  <tr>
+    <td>Fig. 2a 相关性</td>
+    <td>叶/旗叶的叶肉、维管、保卫细胞、表皮偏高；种子表皮中等</td>
+    <td>趋势一致，数值有偏差</td>
+    <td>① top 500 peak 的选择方式；② 是否用了 <code>VariableFeatures</code> 而非全部基因；③ <code>GeneActivity</code> 的默认窗口参数；④ 官方脚本 <code>VarableFeatures</code> 拼写错误导致的对象差异</td>
+  </tr>
+  <tr>
+    <td>关键基因名匹配</td>
+    <td>OsNRT1.1A / OsAAP1 / OsBHLH044</td>
+    <td>应能匹配到</td>
+    <td>注释体系不一致（MSU7 的 <code>LOC_OsXXgXXXXX</code> vs RAP-DB 的 <code>OsXXgXXXXXXX</code>）——<strong>报告里要写明用的是哪套命名</strong></td>
+  </tr>
+</table>
+
+<div class="card danger">
+  <strong>失败环节预案（如果某一步做不出来，就按这个话术写进报告）</strong>
+  <ul style="margin-bottom:0">
+    <li><strong>内存不够加载 5.1 GB 对象</strong> → 改用 390 MB 的 <code>GSE273875</code> 对象完成 Fig. 4u/4w；报告里把"大对象内存受限"作为失败环节分析，并给出"分块读取 / 提高虚拟内存 / 改用 HDF5 格式"的改进方案。</li>
+    <li><strong>CellRanger ARC 跑不动</strong> → 只做 Seurat 侧质控（用 h5 矩阵），并在报告里说明"上游比对因算力受限未完成，改用作者提供的 count matrix"，同时展示 h5 矩阵的质控曲线。</li>
+    <li><strong>pySCENIC / CellOracle 环境装不上</strong> → 这两步属于 Fig. 2f–h 与 Ext. Data Fig. 3h–k，不是必做图；在报告"改进建议"里说明复现边界即可。</li>
+    <li><strong>UMAP 与原图形态差异大</strong> → 不要试图"调参数调到像"（那是过拟合）。正确做法是报告差异、解释原因（随机种子、参数版本、Harmony 迭代次数），并说明"细胞类型占比与细胞数等定量指标一致"才是更硬的证据。</li>
+  </ul>
+</div>
+
+<!-- ================================================================= -->
+<h2 id="s8"><span class="h2flex"><span class="step">8</span>心得与改进建议</h2>
+
+<p>课程明确要求"对原方法的改进建议"。我读官方代码时发现了几处真实问题，<strong>这些都是现成的高分素材</strong>：</p>
+
+<table>
+  <tr><th style="width:26%">发现的问题</th><th style="width:32%">具体位置</th><th>改进建议</th></tr>
+  <tr>
+    <td>函数名拼写错误</td>
+    <td><code>06.Correlation_analysis_of_RNA_and_ATAC.R</code> 第 19 行写成 <code>VarableFeatures()</code></td>
+    <td>正确函数名是 <code>VariableFeatures()</code>。这类错误会让脚本直接报错，建议官方仓库加 CI 做语法检查</td>
+  </tr>
+  <tr>
+    <td>隐式依赖</td>
+    <td>同脚本调用 <code>pheatmap::pheatmap()</code> 但未 <code>library(pheatmap)</code></td>
+    <td>建议在 README 里补全 <code>00.R_requirements.txt</code>，或在每个脚本开头集中声明依赖</td>
+  </tr>
+  <tr>
+    <td>硬编码绝对路径</td>
+    <td>几乎所有脚本（如 <code>/data2/lidongwei/work/...</code>）</td>
+    <td>改用配置文件或环境变量，提高可移植性</td>
+  </tr>
+  <tr>
+    <td>参数在正文与代码间不一致</td>
+    <td>UMAP 参数：Methods 写 <code>n.neighbours=30, min.dist=0.05, spread=4</code>；脚本 05 写 <code>n.neighbors=100, min.dist=0.1, spread=10</code></td>
+    <td>建议统一并在论文中注明代码版本对应的参数，避免复现者困惑</td>
+  </tr>
+  <tr>
+    <td>手工簇→细胞类型映射脆弱</td>
+    <td><code>15.Analyzing_scRNA_of_LTPL120.R</code> 里硬编码了 21 个簇的映射</td>
+    <td>一旦重跑聚类导致 resolution 变化，映射会整体错位。建议改为基于标记基因的自动注释（作者自己就提供了 RSCA 工具，可用于根数据）</td>
+  </tr>
+  <tr>
+    <td>未提供随机种子</td>
+    <td>DoubletFinder 的 <code>pK</code> 自动选择、Harmony、UMAP</td>
+    <td>建议在脚本中显式 <code>set.seed()</code>，提高结果可重复性</td>
+  </tr>
+</table>
+
+<div class="card accent">
+  <strong>方法层面的思考（可作为报告的"心得"）</strong>
+  <ul style="margin-bottom:0">
+    <li><strong>"同细胞多组学"的价值在于它同时是数据和标尺。</strong>Fig. 1c 用真实多组学去检验计算配对方法，得出 38%–82% 的准确率区间——这提醒我们：用计算方法拼两层组学做结论时，必须先评估这个前提是否成立。</li>
+    <li><strong>细胞类型占比、细胞数这类"低维定量指标"比 UMAP 形态更可靠。</strong>UMAP 受随机种子影响大，做复现对比时应当以可精确复算的数值为主证据。</li>
+    <li><strong>资源型论文的复现难点不在算法，而在数据工程。</strong>5.1 GB 对象、8 GB RAW.tar、MSU7 参考基因组版本——这些"脏活"才是复现成败的关键。</li>
+  </ul>
+</div>
+
+<!-- ================================================================= -->
+<h2 id="s9"><span class="h2flex"><span class="step">9</span>提交材料、分工与时间线</h2>
+
+<h3>提交材料清单（缺一项扣 5 分）</h3>
+<table>
+  <tr><th style="width:8%">序号</th><th style="width:32%">材料</th><th>要点</th></tr>
+  <tr><td>1</td><td>幻灯片（PPT / Keynote，≤20 页）</td><td>15 分钟报告 + 5 分钟问答；严格控制时间</td></tr>
+  <tr><td>2</td><td>复现代码（GitHub / Gitee 仓库，含 README）</td><td>本方案已提供代码骨架，直接推上去即可；README 需写清环境版本、数据来源、运行顺序</td></tr>
+  <tr><td>3</td><td>复现报告（PDF / Word）</td><td>含关键图表与说明，按第 1–7 项内容组织</td></tr>
+  <tr><td>4</td><td>数据集来源与可访问性说明</td><td>三个 GEO 登录号 + 官方代码 Zenodo DOI + 参考基因组版本 + 下载体积与省流量策略</td></tr>
+</table>
+
+<h3>三人分工建议</h3>
+<table>
+  <tr><th style="width:16%">角色</th><th style="width:30%">负责内容</th><th>产出</th></tr>
+  <tr>
+    <td><strong>组长 / 数据工程</strong></td>
+    <td>数据下载与环境搭建、路线 B 上游（CellRanger ARC）、内存与算力协调</td>
+    <td>可运行的环境、质控曲线图、下载脚本</td>
+  </tr>
+  <tr>
+    <td><strong>统计与建模</strong></td>
+    <td>Fig. 1b/1d/1e 复现、Fig. 4u/4w 差异分析、结果与原文的定量比对</td>
+    <td>复现图、比对表、差异原因分析</td>
+  </tr>
+  <tr>
+    <td><strong>可视化与汇报</strong></td>
+    <td>PPT 制作、复现报告撰写、图注与引用规范、问答预案准备</td>
+    <td>PPT ≤20 页、复现报告、答辩问答清单</td>
+  </tr>
+</table>
+
+<h3>时间线（按报告前一周提交倒推）</h3>
+<table>
+  <tr><th style="width:16%">阶段</th><th style="width:24%">任务</th><th>负责人</th></tr>
+  <tr><td>D-14 ~ D-12</td><td>读论文、确认数据可获取性、搭环境</td><td>全员</td></tr>
+  <tr><td>D-12 ~ D-9</td><td>下载数据（5.5 GB 需提前开始）；跑通路线 A 出 Fig. 1b/1e</td><td>组长 + 统计</td></tr>
+  <tr><td>D-9 ~ D-6</td><td>完成 Fig. 4u/4w；挑 1 个样本跑路线 B 上游</td><td>统计 + 组长</td></tr>
+  <tr><td>D-6 ~ D-3</td><td>结果与原文逐项比对、写差异原因分析、整理改进建议</td><td>统计 + 可视化</td></tr>
+  <tr><td>D-3 ~ D-1</td><td>做 PPT、写复现报告、内部试讲一次并卡时间</td><td>可视化 + 全员</td></tr>
+  <tr><td><strong>D-7（周日 23:59）</strong></td><td><strong>提交材料截止</strong>（课程邮箱 + 教学邮箱）</td><td>组长</td></tr>
+</table>
+
+<!-- ================================================================= -->
+<h2 id="s10"><span class="h2flex"><span class="step">10</span>学术诚信说明</h2>
+
+<div class="card">
+  <ol style="margin-bottom:0">
+    <li><strong>严格区分复现内容与原创观点</strong>：本方案中所有图表的原始版权归 <em>Wang et al., Nature</em> 644:722–729 (2025) 所有；报告中凡引用原图，均在图注中注明出处。</li>
+    <li><strong>引用规范</strong>：PPT 与报告中所有图表、数据均注明原始文献；本方案的代码骨架为课程复现用途自行编写，参考了作者公开的官方代码（Zenodo <code>10.5281/zenodo.15501781</code>）并已在文中标注。</li>
+    <li><strong>禁止抄袭、买卖代码或论文报告</strong>：不同小组不共用代码与最终结果。</li>
+    <li><strong>大语言模型使用范围与边界（必须写明）</strong>：
+      <ul>
+        <li><strong>使用范围</strong>：文献信息提取（论文基本信息、数据登录号、方法参数与版本号）、流程梳理与方案设计、代码骨架起草与语法检查、复现方案的文档撰写。</li>
+        <li><strong>边界</strong>：所有统计结果与图表<strong>均由本地 R 实际运行产出</strong>，未使用模型生成的"假数据"或"假结果"；论文中的定量判据（如 116,564 这个细胞数）均已从原图/原文核对，并经交叉验证。</li>
+      </ul>
+    </li>
+  </ol>
+</div>
+
+<div class="footnote">
+  <p><strong>参考与出处</strong></p>
+  <ul>
+    <li>Wang, X., Huang, H., Jiang, S. <em>et al.</em> A single-cell multi-omics atlas of rice. <em>Nature</em> <strong>644</strong>, 722–729 (2025). DOI: 10.1038/s41586-025-09251-0</li>
+    <li>官方代码：<em>Single_Cell_Multiomics_in_Rice</em>, Zenodo. DOI: 10.5281/zenodo.15501781</li>
+    <li>数据门户：<a href="http://www.elabcaas.cn/scmr/index.html" target="_blank">http://www.elabcaas.cn/scmr/index.html</a></li>
+    <li>课程要求：《组学数据分析和可视化》学生报告说明，生命科学与技术学院，2026 年 9 月 8 日</li>
+  </ul>
+  <p style="margin-bottom:0">本方案由 WorkBuddy AI 协助整理，用于《组学数据分析和可视化》课程报告准备；所有结论均基于论文原文与公开数据核实。</p>
+</div>
+
+</div>
+</body>
+</html>

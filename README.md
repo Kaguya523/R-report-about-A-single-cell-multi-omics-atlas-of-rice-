@@ -85,8 +85,12 @@ Rscript R/99_demo_fig1b_barplot.R
 |---|---|---|---|---|
 | **①（必做）** | **Fig. 1b / 1d / 1e** — 8 器官 UMAP + 各器官细胞数 + 细胞类型占比 | `GSE232863_scRNA_omics.Rds` | `R/02_fig1b_umap_organ.R`<br>`R/03_fig1e_composition.R` | 细胞总数 = **116,564**；8 器官分别为 Crown root **31,108**、Culm **19,740**、Leaf **13,771**、Flag leaf **5,563**、Shoot apex **13,791**、Tiller bud **8,858**、Panicle **17,457**、Seed **6,276**（8 项相加严格等于 116,564）；UMAP 中 8 个器官呈"生理相近器官相邻"格局 |
 | **②（必做）** | **Fig. 4u / 4w** — WT vs osltpl120 各细胞类型 DEG 数 + 关键基因表达热图 | `GSE273875_LTP_NIP_label_240622.rds.gz`（390 MB） | `R/05_fig4uw_deg.R` | **皮层（cortex）DEG 数最多**（论文原文："the highest number of DEGs in cortical cells"）；OsNRT1.1A / OsAAP1 / OsBHLH044 在突变体中上调且皮层倍数最高 |
-| ③（进阶） | **Fig. 2a** — scRNA vs scATAC 细胞类型相关性热图 | 同上 Rds（需 ATAC assay） | `R/04_fig2a_correlation.R` | 56×56 对角块状结构；叶/旗叶的叶肉、维管、保卫细胞、表皮相关性高；种子表皮相关性中等 |
-| ④（进阶） | **Fig. 3a** — 碳氮吸收相关基因在细胞类型间的表达（上）与染色质可及性（下）热图 | 同上 Rds + ArchR `addGeneScoreMatrix` | 待补 | 碳氮基因呈明显细胞类型特异分层，scRNA 与 scATAC 两层趋势一致 |
+| ③（进阶） | **Fig. 2a** — scRNA vs scATAC 细胞类型相关性热图，**56×56** | 同上 Rds（含 `atacRNA` assay） | **`R/figures/Fig2a_correlation.R`** | 与原图逐格 **Spearman 0.967 / MAE 0.021**；对角 0.408（原图 0.409）、非对角 0.221（原图 0.225）、sd 0.102（原图 0.104） |
+| ④（进阶） | **Fig. 2b** — TF motif 富集热图，**254 TF × 35 细胞类型**，按 **36 个 TF 家族**分块 | 同上 Rds + PlantTFDB motif PFM + 各细胞类型 marker | **`R/figures/Fig2b_TF_enrichment.R`** | 254 行 × 35 列；左侧 36 段家族色带；底部器官圆点 + 原图编号；色标 `Enrichment` 0/50/100 |
+| ⑤（进阶） | **Fig. 3a** — 碳氮代谢基因在细胞类型间的表达（上 scRNA）与染色质可及性（下 scATAC）热图 | `ref/fig3a/` 数字化矩阵（**不需要主数据对象**） | **`R/figures/Fig3a_gene_expression.R`** | 上块 **56×65**、下块 **56×63**；6 类功能色条；两条独立色标 −2~2；10 秒出图 |
+
+> ③④⑤ 的**最终版**都在 [`R/figures/`](R/figures/README.md)（与原图逐格比对通过，报告里的图由它生成）。
+> `R/04_fig2a_correlation.R` 保留为**入门版**：只用 Seurat 基础函数、100 余行，便于看懂"这一步在算什么"，但不追数值精度。
 
 ### 3.1 已产出的文件（`output/`）
 
@@ -94,6 +98,11 @@ Rscript R/99_demo_fig1b_barplot.R
 |---|---|---|
 | `Fig1b_nuclei_per_organ_DEMO.png` | 8 器官细胞数柱状图，用于验证绘图代码正确性（数字与论文完全一致，合计 116,564） | `Rscript R/99_demo_fig1b_barplot.R` |
 | `Fig1b_nuclei_per_organ_DEMO.pdf` | 同上，矢量版 | 同上 |
+| `fig2a/Fig2a_reproduced.png` `.pdf` | Fig. 2a 复现图（2700×2580 @600dpi） | `Rscript R/figures/Fig2a_correlation.R` |
+| `fig2a/Fig2a_best_56x56_clipped.csv` | 复现出的 56×56 相关系数矩阵（= 画图用的那份） | 同上 |
+| `fig2b/Fig2b_deviation_reproduced.png` `.pdf` | Fig. 2b 复现图（254×35） | `Rscript R/figures/Fig2b_TF_enrichment.R` |
+| `fig2b/Fig2b_deviation_vs_original.png` | Fig. 2b 与原图并排对比 | 同上（需 `data/Fig2b_crop.png`） |
+| `fig3a/Fig3a_reproduction_exact.png` | Fig. 3a 复现图（上下两块 + 完整图例） | `Rscript R/figures/Fig3a_gene_expression.R` |
 
 ### 3.2 如何验证代码可运行
 
@@ -159,10 +168,21 @@ SRA fastq → cellranger-arc mkfastq → CellRanger ARC count → CellBender →
 │   ├── 01_inspect_object.R        # 【第一步必跑】探查 Seurat 对象结构
 │   ├── 02_fig1b_umap_organ.R      # 图1b：UMAP by organ + 细胞数柱状图
 │   ├── 03_fig1e_composition.R     # 图1e：细胞类型占比堆叠柱（顺带出图1d）
-│   ├── 04_fig2a_correlation.R     # 图2a：RNA–ATAC 相关性热图
+│   ├── 04_fig2a_correlation.R     # 图2a 入门版：RNA–ATAC 相关性热图（简化）
 │   ├── 05_fig4uw_deg.R            # 图4u/w：WT vs osltpl120 DEG
 │   ├── 98_syntax_check.R          # 全部 R 脚本语法检查
-│   └── 99_demo_fig1b_barplot.R    # 【立即可跑】用论文真实数字验证出图代码
+│   ├── 99_demo_fig1b_barplot.R    # 【立即可跑】用论文真实数字验证出图代码
+│   └── figures/                   # ★ 三张核心图的最终复现脚本（报告里的图由它生成）
+│       ├── README.md              #    运行顺序、输入清单、复现质量对照表
+│       ├── _paths.R               #    公共路径配置（全仓库无绝对路径）
+│       ├── Fig2a_correlation.R    #    Fig 2a：56×56 Spearman 相关热图
+│       ├── Fig2b_TF_enrichment.R  #    Fig 2b：254 TF × 35 细胞类型 motif 富集
+│       └── Fig3a_gene_expression.R#    Fig 3a：56 细胞类型 × 65 基因 z-score
+├── ref/                           # ★ 从原图反演出来的小参考表（几十 KB，随仓库提交）
+│   ├── README.md                  #    每个文件怎么来的、缺了怎么补
+│   ├── fig2a_palette.csv          #    Fig 2a 的 100 阶色标
+│   ├── fig2a_dots.csv             #    Fig 2a 的 56 个行注释圆点色
+│   └── fig3a/                     #    Fig 3a 的 9 个数字化表（见 ref/README.md）
 ├── scripts/
 │   ├── 00_download.sh             # 数据下载（含省流量策略）
 │   └── 01_cellranger_arc.sh       # 路线 B 上游
@@ -197,7 +217,12 @@ Rscript R/02_fig1b_umap_organ.R    # 需 >=32 GB 内存
 Rscript R/03_fig1e_composition.R
 Rscript R/04_fig2a_correlation.R
 
-# 6) 语法自检
+# 6) 三张核心图的最终版（报告里的图由这三条命令生成）
+Rscript R/figures/Fig3a_gene_expression.R   # 最快：10 秒，只需 base R + grid
+Rscript R/figures/Fig2a_correlation.R       # 2.5 分钟，需 >=32 GB 内存
+Rscript R/figures/Fig2b_TF_enrichment.R     # 30 分钟起，需 chromVAR 全家桶
+
+# 7) 语法自检
 Rscript R/98_syntax_check.R
 ```
 
@@ -267,3 +292,7 @@ Rscript R/98_syntax_check.R
 | Fig. 2a 相关系数整体偏低 | 官方脚本 `06.Correlation_analysis_of_RNA_and_ATAC.R` 使用 `VarableFeatures()`（拼写错误，实际未生效） | 已在本仓库 `04_fig2a_correlation.R` 中修正为 `VariableFeatures()` |
 | 中文标签显示为方框 | cairo 字体缺 CJK 字形 | 绘图标签一律用英文（符合科研制图惯例） |
 | `ggsave` 静默失败 | 本机 ragg 设备写盘异常，只 warning 不 error | `_common.R` 的 `save_fig()` 改用 `png(type="cairo")` 并校验文件是否真的生成 |
+| Fig. 2b 只画 **35** 个细胞类型（不是 56） | 论文正文与图注**均未说明筛选标准**；35 个是 Fig 2a 全量 56 个的真子集，缺席 21 个（编号 41,40,35,20,21,5,8,4,6,3,9,30,32,28,27,55,56,51,45,48,14） | 按原图如实复现 35 列，并在报告中列为"原文交代不清之处" |
+| Fig. 2b 的 `primary_markers/` 无法一键重建 | 该目录由上游步骤（逐细胞类型 `FindMarkers`）产出，不在本次三张图脚本范围内 | 已在 [`R/figures/README.md`](R/figures/README.md) 第 4 节给出补全代码；报告中如实说明 |
+| Fig. 2b 家族色带颜色可能与原图有差 | 原图采样得到的 `ref/fig2b_family_palette.rds` 未随仓库提供 | 脚本自动降级为内置 36 色备用配色：**家族分块顺序与位置不变，仅色带颜色不同** |
+| Fig. 3a 下块只有 **63** 列（上块 65） | 2 个基因在 ATAC 侧没有可用的 gene activity 信号，作者在下块省去 | 脚本用 `stopifnot(dim(mAT) == c(56, 63))` 守住该事实，报告中说明 |

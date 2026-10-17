@@ -36,6 +36,9 @@ output/*.rds
 output/*.Rds
 output/*.csv
 output/session_versions.csv
+# output/ 下按图号分的子目录：只排除 .rds 中间结果，图（png/pdf）与小表（csv）要提交
+output/*/*.rds
+output/*/*.Rds
 
 # ---------- 系统与编辑器文件 ----------
 .DS_Store

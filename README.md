@@ -198,8 +198,12 @@ Fig 3a 不需要上述任何原始数据 —— 它的输入是 `ref/fig3a/` 下
 │   ├── fig2a_palette.csv           #   Fig 2a 的 100 阶色标（0 → 0.6）
 │   ├── fig2a_dots.csv              #   Fig 2a 的 56 个行注释圆点色
 │   └── fig3a/                      #   Fig 3a 的 9 个数字化表
-├── output/                         # 产物：跑完三张图后生成（当前仓库里还没有）
-│   ├── fig2a/  fig2b/  fig3a/      #   图片（.png/.pdf）与小表（.csv）会提交，.rds 不进
+├── output/                         # 产物（图与小表提交，.rds 中间结果不进）
+│   ├── fig3a/                      #   ★ 已产出：3 张 PNG
+│   └── fig2a/  fig2b/              #   待跑：需先下载 Rds / 生成 primary_markers
+├── scripts/                        # 上游路线（本复现未执行，用来说明数据怎么来的）
+│   ├── 00_download.sh              #   GEO 三个数据集的下载（含省流量策略）
+│   └── 01_cellranger_arc.sh        #   路线 B：fastq → count matrix（≥64 GB 内存）
 ├── data/                           # 原始数据（体积大，全部 .gitignore 排除，需自行下载）
 │   ├── GSE232863_scRNA_omics.Rds   #   GEO 下载
 │   └── official_code/              #   官方代码包（motif PFM 从这里取）

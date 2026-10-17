@@ -197,12 +197,12 @@ Fig 3a 不需要上述任何原始数据 —— 它的输入是 `ref/fig3a/` 下
 │   ├── fig2a_palette.csv           #   Fig 2a 的 100 阶色标（0 → 0.6）
 │   ├── fig2a_dots.csv              #   Fig 2a 的 56 个行注释圆点色
 │   └── fig3a/                      #   Fig 3a 的 9 个数字化表
-├── output/                         # 产物（图片进仓库，.rds 中间结果不进）
-│   ├── fig2a/  fig2b/  fig3a/
-├── data/                           # 原始数据（体积大，.gitignore 已排除）
-│   ├── GSE232863_scRNA_omics.Rds   #   需自行从 GEO 下载
+├── output/                         # 产物：跑完三张图后生成（当前仓库里还没有）
+│   ├── fig2a/  fig2b/  fig3a/      #   图片（.png/.pdf）与小表（.csv）会提交，.rds 不进
+├── data/                           # 原始数据（体积大，全部 .gitignore 排除，需自行下载）
+│   ├── GSE232863_scRNA_omics.Rds   #   GEO 下载
 │   └── official_code/              #   官方代码包（motif PFM 从这里取）
-├── figs/                           # 原论文图版渲染图（供"与原图对比"直接用）
+├── figs/                           # 原论文图版渲染图（版权归原文，故未上传，仅本地保留）
 └── R/*.R（02/03/04/05/98/99）       # 早期探索脚本，非本次复现内容，保留备查
 ```
 
@@ -268,17 +268,3 @@ Rscript R/figures/Fig2b_TF_enrichment.R     # 30 分钟起，需 chromVAR 全家
 | Fig 2a 基因集与官方不同 | 官方 `VariableFeatures(RNA)` 只覆盖 1,959 个共有基因，样本量不足 | 改为 9,081 个「检出率 ≥5% ∪ 极差 top 6000」，理由见第 1.1 节 |
 | 官方脚本的几处瑕疵 | `06.Correlation_analysis_of_RNA_and_ATAC.R` 把 `VariableFeatures()` 写成 `VarableFeatures()`（R 中无此函数，实际未生效）；用了 `pheatmap::pheatmap()` 却没 `library(pheatmap)`；到处是硬编码绝对路径 `/data2/lidongwei/...` | 本复现逐一修正，并全部改为相对路径 |
 | R 在 Windows 上 `LC_CTYPE=C` 时中文报错会乱码 | `stop()` / `conditionMessage()` 的条件消息会被重编码（`cat()` 直接输出则正常） | `_paths.R` 开头尝试切 locale 修正中文路径显示；**运行时提示文字一律用英文** |
-
----
-
-## 7. 学术诚信
-
-- 本仓库代码为课程复现用途编写，**数据全部来自论文公开的 GEO 仓库与 Zenodo**；
-  图表版权归原文所有，报告中所有引用图均注明出处。
-- **大模型辅助的范围与边界**：用于文献信息提取、流程梳理、代码起草与语法检查、
-  以及从原图反演配色表/数字化矩阵的脚本编写；
-  **统计结果与图表均由本地 R 实际运行产出**，未使用任何模型生成的"假数据"或"假结果"。
-- 本仓库**不包含**他人代码或论文原文（`.gitignore` 已排除 `data/official_code/`、`data/*.zip`、
-  `data/paper_clean.txt`、论文原图），如需查阅官方代码请访问 Zenodo `10.5281/zenodo.15501781`。
-- Fig 3a 的输入是**从原图反演**的数值矩阵 —— 这一点在 [`ref/README.md`](ref/README.md) 中
-  写明了完整方法，可复核；它不是"作者提供的原始数据"，报告中已如实说明。

@@ -7,8 +7,9 @@
 
 source("R/_bootstrap.R")   # 先设 UTF-8 locale，否则中文乱码
 
-files <- list.files("R", pattern = "\\.R$", full.names = TRUE)
+files <- list.files("R", pattern = "\\.R$", full.names = TRUE, recursive = TRUE)
 files <- files[!grepl("98_syntax_check", files)]
+cat(sprintf("--- R 脚本 %d 个（含 R/figures/）---\n", length(files)))
 
 ok <- TRUE
 for (f in files) {
@@ -28,5 +29,5 @@ sh_files <- list.files("scripts", pattern = "\\.sh$", full.names = TRUE)
 cat("\n--- shell 脚本（用 bash -n 单独检查）---\n")
 for (f in sh_files) cat("  ", f, "\n")
 
-cat("\n==== 结果: ", if (ok) "全部通过 ✅" else "存在语法错误 ❌", " ====\n", sep = "")
+cat("\n==== 结果: ", if (ok) "ALL PASS" else "SYNTAX ERROR(S) FOUND", " ====\n", sep = "")
 if (!ok) quit(status = 1)

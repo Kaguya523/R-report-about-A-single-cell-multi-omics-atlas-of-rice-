@@ -199,8 +199,9 @@ Fig 3a 不需要上述任何原始数据 —— 它的输入是 `ref/fig3a/` 下
 │   ├── fig2a_dots.csv              #   Fig 2a 的 56 个行注释圆点色
 │   └── fig3a/                      #   Fig 3a 的 9 个数字化表
 ├── output/                         # 产物（图与小表提交，.rds 中间结果不进）
-│   ├── fig3a/                      #   ★ 已产出：3 张 PNG
-│   └── fig2a/  fig2b/              #   待跑：需先下载 Rds / 生成 primary_markers
+│   ├── fig2a/                      #   ★ Fig2a_vs_original.jpg（与原图并排）
+│   ├── fig2b/                      #   ★ Fig2b_vs_original.png（与原图并排）
+│   └── fig3a/                      #   ★ 3 张 PNG（完整图 + 上下两块）
 ├── scripts/                        # 上游路线（本复现未执行，用来说明数据怎么来的）
 │   ├── 00_download.sh              #   GEO 三个数据集的下载（含省流量策略）
 │   └── 01_cellranger_arc.sh        #   路线 B：fastq → count matrix（≥64 GB 内存）
@@ -242,15 +243,19 @@ Rscript R/figures/Fig2b_TF_enrichment.R     # 30 分钟起，需 chromVAR 全家
 
 ### 产物
 
-| 文件 | 内容 |
-|---|---|
-| `output/fig2a/Fig2a_reproduced.png` `.pdf` | 2700×2580 @600 dpi + 矢量版 |
-| `output/fig2a/Fig2a_best_56x56_clipped.csv` | 复现出的 56×56 相关系数矩阵（= 画图用的那份） |
-| `output/fig2a/Fig2a_axis_mapping.csv` | 原图编号 ↔ GEO `final_id2` ↔ 器官 的对照 |
-| `output/fig2b/Fig2b_deviation_reproduced.png` `.pdf` | 254×35 热图 |
-| `output/fig2b/Fig2b_deviation_vs_original.png` | 与原图并排对比 |
-| `output/fig3a/Fig3a_reproduction_exact.png` | 上下两块 + 完整图例 |
-| `output/fig3a/Fig3a_scRNA_panel.png` / `Fig3a_scATAC_panel.png` | 单独两块 |
+| 文件 | 内容 | 状态 |
+|---|---|---|
+| `output/fig2a/Fig2a_vs_original.jpg` | 与原图并排对比（56×56，Spearman 0.9668 / Pearson 0.9706 / MAE 0.0211） | ✅ 已提交 |
+| `output/fig2b/Fig2b_vs_original.png` | 与原图并排对比（254×54 vs 253×56，口径见第 6 节） | ✅ 已提交 |
+| `output/fig3a/Fig3a_reproduction_exact.png` | 上下两块 + 完整图例 | ✅ 已提交 |
+| `output/fig3a/Fig3a_scRNA_panel.png` / `Fig3a_scATAC_panel.png` | 单独两块 | ✅ 已提交 |
+| `output/fig2a/Fig2a_reproduced.png` `.pdf` | 2700×2580 @600 dpi + 矢量版 | 跑 Fig2a 脚本后生成 |
+| `output/fig2a/Fig2a_best_56x56_clipped.csv` | 复现出的 56×56 相关系数矩阵（= 画图用的那份） | 同上 |
+| `output/fig2a/Fig2a_axis_mapping.csv` | 原图编号 ↔ GEO `final_id2` ↔ 器官 的对照 | 同上 |
+| `output/fig2b/Fig2b_deviation_reproduced.png` `.pdf` | 254×35 热图（当前脚本口径） | 跑 Fig2b 脚本后生成 |
+
+> **三张图的复现图都已提交**：Fig 3a 可直接由脚本重画（10 秒）；Fig 2a / 2b 的成品图由
+> 当年那台机器跑出后拷入，脚本本身可重跑但需要 5.1 GB 主对象与 chromVAR 全家桶。
 
 ### 环境
 
@@ -267,6 +272,7 @@ Rscript R/figures/Fig2b_TF_enrichment.R     # 30 分钟起，需 chromVAR 全家
 |---|---|---|
 | **Fig 2b 数值是代理指标，不是原图的 fold enrichment** | 论文 Methods 里 motif 富集用的是 ChIPseeker `peakAnnoEnrichment`（超几何检验，FDR ≤ 0.1 且 log2FC ≥ 0.5）；本复现用 **chromVAR deviation score** 作为富集强度的代理，再线性映射到 0–100 对齐色标。两者单调相关但**不等价** | 已在脚本头部与本节明确标注；这是本复现**最大的方法学偏差** |
 | Fig 2b 只画 **35** 个细胞类型（不是 56） | 论文正文与图注**均未说明**筛选标准；35 个是 56 个的真子集，缺席 21 个 | 按原图如实复现 35 列，并列为"原文交代不清之处" |
+| **`output/fig2b/Fig2b_vs_original.png` 是早期版本的对比图** | 该图生成时按 56 个细胞类型（原图侧标 54）绘制、行数 253；当前脚本已收窄到原图口径 **254 TF × 35 细胞类型**。统计量与配色相同，差别只在列的取舍 | 图内标注保持原样以便追溯版本；重跑 `Fig2b_TF_enrichment.R` 即得 254×35 版，可直接替换该文件 |
 | Fig 2b 的 `primary_markers/` 无法一键重建 | 该目录由上游步骤（逐细胞类型 `FindMarkers`）产出，不在本次三张图的脚本范围内 | [`R/figures/README.md`](R/figures/README.md) 第 4 节给出补全代码；本 README 如实说明 |
 | Fig 2b 家族色带颜色可能与原图有差 | 从原图采样得到的 `ref/fig2b_family_palette.rds` 未随仓库提供 | 脚本自动降级为内置 36 色：**家族分块顺序与位置不变，仅色带颜色不同**（会打印 warning） |
 | Fig 3a 下块只有 **63** 列（上块 65） | **原图本身**下块就只画了 63 个基因，缺 OsPGK 与 OsSUS3；不是数字化遗漏 | 脚本用 `stopifnot(dim(mAT) == c(56, 63))` 守住该事实 |

@@ -88,4 +88,70 @@ need_file <- function(path, what = "input file", hint = NULL) {
 ## 0–255 整数 RGB → "#RRGGBB"
 hex <- function(r, g, b) grDevices::rgb(r, g, b, maxColorValue = 255)
 
+## ---- 4b. 注册 Arial 字体 ---------------------------------------------------
+## 三个脚本的图注都用 fontfamily = "Arial"，但 Windows 上 R 的字体数据库里
+## 默认只有 serif / sans / mono，直接写 "Arial" 会报
+##   font family not found in Windows font database
+## 并被替换成度量不同的字体（字号看起来变大、标签挤在一起）。
+## 显式注册一下即可；注册失败也不影响运行。
+if (.Platform$OS.type == "windows") {
+  try(suppressWarnings(
+    grDevices::windowsFonts(Arial = grDevices::windowsFont("Arial"))
+  ), silent = TRUE)
+}
+
+## ---- 5. 图形设备：绕开「中文路径写不了图」----------------------------------
+## 现象：仓库放在中文目录（如 D:/文章/水稻scMultiome复现方案）时，
+##       png() / pdf() / cairo_pdf() 全部失败，报
+##         unable to translate 'D:/<U+6587>...' to native encoding
+##       或 unable to open file ... for writing
+## 原因：R 的图形设备把文件名转成本地编码时失败（Windows + LC_CTYPE=C）。
+## 对策：先直接写目标路径；失败就改画到 ASCII 临时文件，关闭时再 file.copy 过去
+##       （file.copy 支持中文目标路径，实测可用）。
+## 注意：不要改用 ragg::agg_png()。它确实能写中文路径，但在本机会让 R 退出时
+##       segfault（exit 139，与画什么无关），得不偿失。
+## 用法：fig_open(...) 打开 → 画 → fig_close() 关闭（不要直接 dev.off()）。
+
+.FIG <- new.env(parent = emptyenv())
+
+fig_open <- function(file, type = c("png", "pdf"), width, height,
+                     res = 300, units = c("px", "in"), bg = "white") {
+  type  <- match.arg(type)
+  units <- match.arg(units)
+  px_w <- if (units == "in") round(width  * res) else width
+  px_h <- if (units == "in") round(height * res) else height
+
+  .FIG$tmp  <- NULL
+  .FIG$dest <- file
+
+  ## 1) 直接写目标路径（路径全 ASCII 时走这条，最省事）
+  ok <- tryCatch({
+    suppressWarnings(
+      if (type == "png") grDevices::png(file, width = px_w, height = px_h, res = res, bg = bg)
+      else               grDevices::pdf(file, width = width, height = height, bg = bg)
+    )
+    TRUE
+  }, error = function(e) FALSE)
+  if (ok) return(invisible(file))
+
+  ## 2) 兜底：画到 ASCII 临时文件，fig_close() 时复制到目标位置
+  tmp <- file.path(tempdir(), paste0(basename(tempfile("ricefig")), ".", type))
+  if (type == "png") grDevices::png(tmp, width = px_w, height = px_h, res = res, bg = bg)
+  else               grDevices::pdf(tmp, width = width, height = height, bg = bg)
+  .FIG$tmp <- tmp
+  msg("note: ", basename(file), " rendered via a temp path (Chinese path not writable by the device)")
+  invisible(file)
+}
+
+fig_close <- function() {
+  grDevices::dev.off()
+  if (!is.null(.FIG$tmp) && file.exists(.FIG$tmp)) {
+    ok <- file.copy(.FIG$tmp, .FIG$dest, overwrite = TRUE)
+    unlink(.FIG$tmp)
+    if (!isTRUE(ok)) warning("failed to copy figure to ", .FIG$dest, call. = FALSE)
+  }
+  .FIG$tmp <- NULL
+  invisible(NULL)
+}
+
 msg("project root: ", PROJ)

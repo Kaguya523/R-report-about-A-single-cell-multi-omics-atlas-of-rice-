@@ -344,8 +344,7 @@ ht <- Heatmap(
 W <- 10.2; H <- 8.90
 for (ext in c("png", "pdf")) {
   fn <- file.path(RES, sprintf("%s.%s", OUT, ext))
-  if (ext == "png") png(fn, width = W, height = H, units = "in", res = 400) else
-                     pdf(fn, width = W, height = H)
+  fig_open(fn, ext, W, H, res = 400, units = "in")
   grid.newpage()
   pushViewport(viewport(x = 0.018, y = 0.118, width = 0.975, height = 0.845, just = c("left", "bottom")))
   draw(ht, newpage = FALSE, heatmap_legend_side = "right",
@@ -367,7 +366,7 @@ for (ext in c("png", "pdf")) {
   popViewport()
   grid.text("TF family", x = unit(x0 - 0.010, "npc"), y = unit((y0 + y1) / 2, "npc"),
             just = c("right", "center"), gp = gpar(fontsize = 8.5))
-  dev.off()
+  fig_close()
   log("[ok]", fn)
 }
 saveRDS(list(mat = M, v = V, fam = fam, peak_fam = peak_fam, cap = cap,
@@ -397,8 +396,8 @@ GAP <- 0.45; M0 <- 0.75
 W2 <- M0 * 2 + wA2 + GAP + wB2
 Ht <- H + 1.25
 
-png(file.path(RES, "Fig2b_deviation_vs_original.png"), width = W2, height = Ht,
-    units = "in", res = 300)
+fig_open(file.path(RES, "Fig2b_deviation_vs_original.png"),
+         "png", W2, Ht, res = 300, units = "in")
 grid.newpage()
 toX <- function(inch) inch / W2
 toY <- function(inch) inch / Ht
@@ -431,7 +430,7 @@ lab <- sprintf("%d TF x %d cell types;  %d TF families",
 grid.text(lab,
           x = unit(toX(xB), "npc"), y = unit(toY(yTop - H - 0.06), "npc"),
           just = c("left", "top"), gp = gpar(fontsize = 8.5, col = "grey30"))
-dev.off()
+fig_close()
 log("[ok] output/fig2b/Fig2b_deviation_vs_original.png")
 }
 

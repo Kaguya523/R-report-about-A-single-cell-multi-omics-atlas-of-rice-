@@ -217,7 +217,7 @@ draw_heat_panel <- function(M, genes, x0, x1, y0, y1, lut,
 
 # ---------- 单面板成图 ----------
 draw_one <- function(file, panel) {
-  png(file.path(OUTD, file), width = 398 * 4, height = 290 * 4, res = 288, bg = "white")
+  fig_open(file.path(OUTD, file), "png", 398 * 4, 290 * 4, res = 288)
   pushViewport(viewport(xscale = c(20, 415), yscale = c(0, 330)))
   draw_pathway_legend()
   if (panel == "RNA") {
@@ -230,15 +230,15 @@ draw_one <- function(file, panel) {
                     path_y = LAY$y_ata0 - 7.5, label_y = LAY$y_ata0 - 40)
     draw_scale_legend(lutAT, "scATAC", LAY$leg2_y, LAY$leg2_h)
   }
-  popViewport(); dev.off()
+  popViewport(); fig_close()
   cat("saved", file.path(OUTD, file), "\n")
 }
 draw_one("Fig3a_scRNA_panel.png",  "RNA")
 draw_one("Fig3a_scATAC_panel.png", "ATAC")
 
 # ---------- 整体复刻 (上下两块, 完整右侧图例) ----------
-png(file.path(OUTD, "Fig3a_reproduction_exact.png"),
-    width = 398 * 4, height = 300 * 4, res = 288, bg = "white")
+fig_open(file.path(OUTD, "Fig3a_reproduction_exact.png"), "png",
+         398 * 4, 300 * 4, res = 288)
 pushViewport(viewport(xscale = c(20, 415), yscale = c(0, 330)))
 draw_pathway_legend()
 draw_scale_legend(lutRNA, "scRNA",  LAY$leg1_y, LAY$leg1_h)
@@ -247,5 +247,5 @@ draw_heat_panel(mRNA, genesRNA, LAY$x0, LAY$x1r, LAY$y_rna0, LAY$y_rna1,
                 lutRNA, pathRNA, organRNA, groupRNA, "scRNA")
 draw_heat_panel(mAT, genesAT, LAY$x0, LAY$x1a, LAY$y_ata0, LAY$y_ata1,
                 lutAT, pathAT, organAT, groupAT, "scATAC", draw_genes = FALSE)
-popViewport(); dev.off()
+popViewport(); fig_close()
 cat("saved", file.path(OUTD, "Fig3a_reproduction_exact.png"), "\n")

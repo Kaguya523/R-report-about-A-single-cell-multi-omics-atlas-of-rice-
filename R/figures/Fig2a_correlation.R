@@ -231,10 +231,10 @@ plot_fig2a <- function(C, stem) {
       grid_width = unit(1.35, "mm"), border = FALSE,
       labels_gp = gpar(fontsize = FS), title_gp = gpar(fontsize = FS),
       ticks_gp = gpar(fontsize = FS)))
-  png(file.path(OUT, paste0(stem, ".png")), width = 2700, height = 2580, res = 600)
-  draw(ht, heatmap_legend_side = "right"); dev.off()
-  pdf(file.path(OUT, paste0(stem, ".pdf")), width = 4.5, height = 4.3)
-  draw(ht, heatmap_legend_side = "right"); dev.off()
+  fig_open(file.path(OUT, paste0(stem, ".png")), "png", 2700, 2580, res = 600)
+  draw(ht, heatmap_legend_side = "right"); fig_close()
+  fig_open(file.path(OUT, paste0(stem, ".pdf")), "pdf", 4.5, 4.3)
+  draw(ht, heatmap_legend_side = "right"); fig_close()
   invisible(ht)
 }
 plot_fig2a(C_C, "Fig2a_reproduced")

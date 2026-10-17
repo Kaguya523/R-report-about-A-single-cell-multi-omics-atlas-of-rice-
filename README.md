@@ -40,13 +40,14 @@ Rscript R/figures/00_selftest.R
 每张图需要的 R 包是否装好，并打印一张就绪状态表：
 
 ```
-  Fig 2a : OK  ref=OK  data=OK  pkgs=OK
-  Fig 2b : NO  data=OK  markers=NO  pkgs=NO
+  Fig 2a : NO  ref=OK  data=NO  pkgs=OK
+  Fig 2b : NO  data=NO  markers=NO  pkgs=NO
   Fig 3a : OK  ref=OK
 ```
 
-`Fig 3a` 是三者中最容易跑起来的 —— **只需要 base R + `grid`**，不需要 Seurat / Bioconductor。
-建议把它当作"环境是否正常"的第一个验证点。
+`Fig 3a` 是三者中**唯一 clone 下来就能直接跑**的 —— 它的输入全部在 `ref/fig3a/` 里，
+且**只需要 base R + `grid`**，不需要 Seurat / Bioconductor。
+建议把它当作"环境是否正常"的第一个验证点：跑通了再装包、下数据。
 
 ---
 
@@ -127,7 +128,7 @@ $$\rho = 1 - \frac{6\sum d_i^2}{n(n^2-1)}$$
 氮吸收（5 个）、氨基酸合成（6）、光合作用（26）、糖代谢（18）、TCA 循环（2）、运输相关（8），合计 **65**。
 右侧两个注释条分别是器官与分组。
 
-**关键结构**：上块 **56 × 65**、下块 **56 × 63**（2 个基因在 ATAC 侧没有可用的 gene activity 信号，作者在下块省去）。
+**关键结构**：上块 **56 × 65**、下块 **56 × 63**。下块少的是 **OsPGK** 与 **OsSUS3** —— **原图下块本身就只画了 63 个**，不是数字化时漏掉的。
 
 ---
 
@@ -264,7 +265,8 @@ Rscript R/figures/Fig2b_TF_enrichment.R     # 30 分钟起，需 chromVAR 全家
 | Fig 2b 只画 **35** 个细胞类型（不是 56） | 论文正文与图注**均未说明**筛选标准；35 个是 56 个的真子集，缺席 21 个 | 按原图如实复现 35 列，并列为"原文交代不清之处" |
 | Fig 2b 的 `primary_markers/` 无法一键重建 | 该目录由上游步骤（逐细胞类型 `FindMarkers`）产出，不在本次三张图的脚本范围内 | [`R/figures/README.md`](R/figures/README.md) 第 4 节给出补全代码；本 README 如实说明 |
 | Fig 2b 家族色带颜色可能与原图有差 | 从原图采样得到的 `ref/fig2b_family_palette.rds` 未随仓库提供 | 脚本自动降级为内置 36 色：**家族分块顺序与位置不变，仅色带颜色不同**（会打印 warning） |
-| Fig 3a 下块只有 **63** 列（上块 65） | 2 个基因在 ATAC 侧没有可用的 gene activity 信号，作者在下块省去 | 脚本用 `stopifnot(dim(mAT) == c(56, 63))` 守住该事实 |
+| Fig 3a 下块只有 **63** 列（上块 65） | **原图本身**下块就只画了 63 个基因，缺 OsPGK 与 OsSUS3；不是数字化遗漏 | 脚本用 `stopifnot(dim(mAT) == c(56, 63))` 守住该事实 |
+| 图写不进 `output/`，报 `unable to translate ... to native encoding` | 仓库放在中文目录时，R 的 `png()` / `pdf()` / `cairo_pdf()` 都把文件名转成本地编码失败 | `_paths.R` 的 `fig_open()` 先试直接写，失败就画到 ASCII 临时文件、`fig_close()` 时再 `file.copy` 过去。**不要改用 `ragg::agg_png()`**：它能写中文路径，但本机退出时 segfault（exit 139） |
 | Fig 2a 基因集与官方不同 | 官方 `VariableFeatures(RNA)` 只覆盖 1,959 个共有基因，样本量不足 | 改为 9,081 个「检出率 ≥5% ∪ 极差 top 6000」，理由见第 1.1 节 |
 | 官方脚本的几处瑕疵 | `06.Correlation_analysis_of_RNA_and_ATAC.R` 把 `VariableFeatures()` 写成 `VarableFeatures()`（R 中无此函数，实际未生效）；用了 `pheatmap::pheatmap()` 却没 `library(pheatmap)`；到处是硬编码绝对路径 `/data2/lidongwei/...` | 本复现逐一修正，并全部改为相对路径 |
 | R 在 Windows 上 `LC_CTYPE=C` 时中文报错会乱码 | `stop()` / `conditionMessage()` 的条件消息会被重编码（`cat()` 直接输出则正常） | `_paths.R` 开头尝试切 locale 修正中文路径显示；**运行时提示文字一律用英文** |

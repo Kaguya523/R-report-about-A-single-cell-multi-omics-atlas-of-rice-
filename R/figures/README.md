@@ -19,12 +19,13 @@
 
 | 脚本 | 对应图 | 内容 | 运行时间 | 依赖 |
 |---|---|---|---|---|
+| `00_selftest.R` | — | **先跑这个**：检查路径 / 参考表 / 原始数据 / R 包，打印三张图的就绪状态 | 10 s | 无 |
 | `Fig2a_correlation.R` | **Fig. 2a** | scRNA vs scATAC 细胞类型平均谱的 Spearman 相关热图，56×56 | ~2.5 min | Seurat 5 / Signac / ComplexHeatmap，内存 ≥32 GB |
 | `Fig2b_TF_enrichment.R` | **Fig. 2b** | 254 TF × 35 细胞类型的 motif deviation score 热图，按 36 个 TF 家族分块 | 30 min – 3 h | 上面这些 + chromVAR / motifmatchr / BSgenome.Osativa.MSU.MSU7 |
 | `Fig3a_gene_expression.R` | **Fig. 3a** | 56 细胞类型 × 65 基因的碳氮代谢基因 z-score 热图（上 scRNA / 下 scATAC） | < 10 s | **只要 base R + grid**，不需要任何 Bioconductor 包 |
 
-**建议的验证顺序**：先跑 `Fig3a`（最快、装包最少，10 秒出图），确认 R 环境和 `ref/` 都对；
-再跑 `Fig2a`（2.5 分钟）；最后跑 `Fig2b`（最慢，且需要 chromVAR 全家桶）。
+**建议的验证顺序**：先跑 `00_selftest.R` 看就绪状态 → 再跑 `Fig3a`（最快、装包最少，10 秒出图）
+→ 然后 `Fig2a`（2.5 分钟）→ 最后 `Fig2b`（最慢，且需要 chromVAR 全家桶）。
 
 ---
 
@@ -34,6 +35,7 @@
 # 在仓库根目录
 cd 水稻scMultiome复现方案
 
+Rscript R/figures/00_selftest.R              # 10 秒，先看能不能跑
 Rscript R/figures/Fig3a_gene_expression.R    # 10 秒
 Rscript R/figures/Fig2a_correlation.R        # 2.5 分钟
 Rscript R/figures/Fig2b_TF_enrichment.R      # 30 分钟起

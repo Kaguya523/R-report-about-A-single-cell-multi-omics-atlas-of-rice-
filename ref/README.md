@@ -15,10 +15,12 @@
 |---|---|---|---|
 | `fig2a_palette.csv` | 100 阶色标（`value` 0→0.6，`r/g/b` 0–255） | 从原图 Fig. 2a 右侧色条 `Correlation` 逐像素纵向采样 | `R/figures/Fig2a_correlation.R` |
 | `fig2a_dots.csv` | 56 个行注释圆点的颜色（`position` 1–56，`axis_label_paper` 原图编号） | 从原图 Fig. 2a 右侧 56 个圆点逐个取色；顺序即矩阵行顺序（上→下） | 同上 |
-| `fig3a/` 下 9 个 CSV | Fig 3a 的两块数值矩阵 + 基因名 + 两套色标 + 行注释 + 功能色条 | 论文 PDF 第 6 页 Fig. 3a 的矢量图层逐格提取，经原图色标反演为 z-score | `R/figures/Fig3a_gene_expression.R` |
 
 > 为什么要单独存成 CSV：原脚本依赖一个 `ref/fig2a_style.R`（里面硬编码 `PAL_100` / `DOT_56`）。
 > 换成 CSV 之后，颜色既**可核对**（能直接和原图色条对照），又**不依赖任何外部 R 文件**。
+>
+> **Fig 1b / 1c / 2b 不需要本目录的任何文件。** Fig 1b / 1c 只读主数据对象；
+> Fig 2b 的家族配色是可选文件（见第 2 节）。
 
 ---
 
@@ -31,43 +33,15 @@
 
 ---
 
-## 3. `ref/fig3a/` 的 9 个文件（已提交）
-
-Fig 3a 的做法是「先从 PDF 矢量图层把原热图数字化成数值矩阵，再用同一套色标重绘」，
-所以这 9 个表是**这张图的输入**，不是可有可无的中间产物。
-
-| 文件 | 形状 / 列 | 说明 |
-|---|---|---|
-| `fig3a_scRNA_values.csv` | 56 × 65 | 上块（scRNA）z-score 矩阵，行=细胞类型，列=基因 |
-| `fig3a_scATAC_values22.csv` | 56 × 63 | 下块（scATAC）z-score 矩阵；比上块少 2 个基因 |
-| `fig3a_genes.csv` | 65 行，列 `gene` | 上块基因名（按列顺序） |
-| `fig3a_atac_genes.csv` | 63 行，列 `gene` | 下块基因名（按列顺序） |
-| `lut_bwr.csv` | 列 `value,r,g,b` | scRNA 色标：蓝–白–黄–红，`value` 取 −2…2，92 级 |
-| `lut_scATAC_grad.csv` | 列 `value,r,g,b` | scATAC 色标：浅黄–红渐变，`value` 取 −2…2，128 级 |
-| `row_anno_upper.csv` | 56 行，列 `row,organ_r/g/b,group_r/g/b` | 上块行注释（器官色 + 分组色，空 = 无该段） |
-| `row_anno_lower.csv` | 56 行，同上 | 下块行注释 |
-| `col_strip.csv` | 65 行，列 `x,r,g,b` | 顶部 pathway 功能色条（逐列一色） |
-
-> **关于 65 vs 63**：上块 65 个基因、下块 63 个。**原图下块本身就只画了 63 个** ——
-> 缺的是 **OsPGK** 与 **OsSUS3** 这两个基因，不是数字化时漏掉的。
-> 脚本里的 `stopifnot(nrow(mRNA) == 56, ncol(mRNA) == 65, dim(mAT) == c(56, 63))`
-> 就是用来守住这个事实的。
-
-> **数据来源与可信度**：这批表由本项目从论文 PDF 的矢量图层反演得到，
-> 不是作者提供的原始数据。反演方法见第 4 节，可复核。
-> 矩阵的行列顺序为：行 = 细胞类型 1–56（自上而下），列 = 基因（按 `fig3a_genes.csv` / `fig3a_atac_genes.csv` 的顺序）。
-
----
-
-## 4. 想自己重新数字化？
+## 3. 想自己从原图重新取色？
 
 思路（也是本项目实际采用的）：
 
-1. 用 `pdftotext -bbox` 或 PyMuPDF 拿到 Fig 3a 区域的**矢量矩形**（每个热图格子就是一个 `rect`，带 `fill` 颜色）；
-2. 按 x/y 坐标把 `rect` 还原成 56×65 / 56×63 的网格，得到每个格子的 RGB；
-3. 从原图自带的色标（同样是矢量或位图）建立 `value → RGB` 的查找表 `lut`；
-4. 对每个格子做**最近色反查**（`which.min((V - x)^2)`），得到 z-score 数值；
-5. 把结果存成上面的 CSV。
+1. 用 `pdftotext -bbox` 或 PyMuPDF 拿到目标图区域的**矢量矩形**（色条、圆点、色块都是 `rect` 或 `circle`，带 `fill` 颜色）；
+2. 按 x/y 坐标把元素排成有序序列（例如色条从上到下、圆点从第 1 行到第 56 行）；
+3. 记录每个元素的 RGB，按位置赋一个 `value`（色条取 0→0.6 线性等分）；
+4. 存成 CSV（列名 `value,r,g,b` 或 `position,axis_label_paper,r,g,b`）。
 
-`R/figures/Fig3a_gene_expression.R` 的第 3 步（`col_of()`）做的就是第 4 步的反向操作：
-`value → 最近的颜色 → 填格子`。所以数字化和重绘用的是同一张 LUT，颜色不会跑偏。
+`R/figures/Fig2a_correlation.R` 里 `colorRamp2(seq(0, 0.6, length.out = 100), PAL_100)`
+就是把 `fig2a_palette.csv` 的 100 个 RGB 直接当作色带锚点 ——
+取色与重绘用的是同一张表，颜色不会跑偏。

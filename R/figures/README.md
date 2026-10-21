@@ -1,6 +1,6 @@
-# `R/figures/` —— 三张核心图的最终复现脚本
+# `R/figures/` —— 四张核心图的最终复现脚本
 
-这个子目录放的是**报告里那三张图的实际生成脚本**，也就是"最终交付版"。
+这个子目录放的是**报告里那四张图的实际生成脚本**，也就是"最终交付版"。
 
 和 `R/` 根目录下的 `02_` / `03_` / `04_` / `05_` 的区别：
 
@@ -15,17 +15,18 @@
 
 ---
 
-## 1. 三个脚本
+## 1. 五个脚本
 
 | 脚本 | 对应图 | 内容 | 运行时间 | 依赖 |
 |---|---|---|---|---|
-| `00_selftest.R` | — | **先跑这个**：检查路径 / 参考表 / 原始数据 / R 包，打印三张图的就绪状态 | 10 s | 无 |
+| `00_selftest.R` | — | **先跑这个**：检查路径 / 参考表 / 原始数据 / R 包，打印四张图的就绪状态 | 10 s | 无 |
+| `Fig1b_reproduce.R` | **Fig. 1b** | 全细胞 WNN-UMAP（按 8 个器官着色）+ 各器官细胞数条形图 | ~6 min | Seurat 5 / Signac / ggplot2 / patchwork / dplyr，内存 ≥16 GB |
+| `Fig1c_reproduce.R` | **Fig. 1c** | RNA→ATAC 标签迁移的逐器官准确率（8 器官 × 2 根横条） | 30 min – 2 h | Seurat 5 / Signac / ggpattern / dplyr，内存 ≥16 GB |
 | `Fig2a_correlation.R` | **Fig. 2a** | scRNA vs scATAC 细胞类型平均谱的 Spearman 相关热图，56×56 | ~2.5 min | Seurat 5 / Signac / ComplexHeatmap，内存 ≥32 GB |
 | `Fig2b_TF_enrichment.R` | **Fig. 2b** | 254 TF × 35 细胞类型的 motif deviation score 热图，按 36 个 TF 家族分块 | 30 min – 3 h | 上面这些 + chromVAR / motifmatchr / BSgenome.Osativa.MSU.MSU7 |
-| `Fig3a_gene_expression.R` | **Fig. 3a** | 56 细胞类型 × 65 基因的碳氮代谢基因 z-score 热图（上 scRNA / 下 scATAC） | < 10 s | **只要 base R + grid**，不需要任何 Bioconductor 包 |
 
-**建议的验证顺序**：先跑 `00_selftest.R` 看就绪状态 → 再跑 `Fig3a`（最快、装包最少，10 秒出图）
-→ 然后 `Fig2a`（2.5 分钟）→ 最后 `Fig2b`（最慢，且需要 chromVAR 全家桶）。
+**建议的验证顺序**：先跑 `00_selftest.R` 看就绪状态 → 再跑 `Fig1b`（只读元数据与坐标，最快出图）
+→ 然后 `Fig1c`（要跑锚点，最久）→ 再 `Fig2a`（2.5 分钟）→ 最后 `Fig2b`（需要 chromVAR 全家桶）。
 
 ---
 
@@ -36,7 +37,8 @@
 cd 水稻scMultiome复现方案
 
 Rscript R/figures/00_selftest.R              # 10 秒，先看能不能跑
-Rscript R/figures/Fig3a_gene_expression.R    # 10 秒
+Rscript R/figures/Fig1b_reproduce.R          # 约 6 分钟
+Rscript R/figures/Fig1c_reproduce.R          # 30 分钟起
 Rscript R/figures/Fig2a_correlation.R        # 2.5 分钟
 Rscript R/figures/Fig2b_TF_enrichment.R      # 30 分钟起
 ```
@@ -59,7 +61,13 @@ Sys.setenv(RICE_RDS_SCRNA = "E:/data/GSE232863_scRNA_omics.Rds")
 
 ## 3. 路径约定（重要）
 
-三个脚本都 `source("_paths.R")`，**脚本正文里不出现任何绝对路径**。约定如下：
+四张图的脚本都**不写死绝对路径**，但定位方式分两种：
+
+- `Fig2a` / `Fig2b`：`source("_paths.R")`，由它向上查找仓库根目录；
+- `Fig1b` / `Fig1c`：默认读仓库相对路径 `data/…` 与 `output/…`，可用环境变量覆盖
+  （`RICE_RDS_SCRNA` / `RICE_OUT_FIG1B` / `RICE_OUT_FIG1C`）。
+
+约定如下：
 
 | 变量 | 指向 | 是否进仓库 |
 |---|---|---|
@@ -78,6 +86,26 @@ Sys.setenv(RICE_RDS_SCRNA = "E:/data/GSE232863_scRNA_omics.Rds")
 ---
 
 ## 4. 各脚本的输入清单
+
+### Fig 1b
+
+| 文件 | 必需 | 说明 |
+|---|---|---|
+| `data/GSE232863_scRNA_omics.Rds` | ✅ | GEO 下载，5.1 GB。**只读取元数据与降维坐标**：`obj@reductions` 里的 WNN-UMAP，以及 `meta.data` 的 `tissue` 列 |
+| `output/fig1b/` | — | 产物目录，脚本自动创建 |
+
+> Fig 1b **不读任何表达值**，属于可视化层面复现：坐标与器官注释均为作者发布结果，
+> 复现目标是版式、配色与细胞数比例。脚本可选地用 `WNN_SOURCE = "recompute"` 重算 UMAP 做一致性检验。
+
+### Fig 1c
+
+| 文件 | 必需 | 说明 |
+|---|---|---|
+| `data/GSE232863_scRNA_omics.Rds` | ✅ | 同上。需要 `RNA`（参考集）与 `atacRNA`（查询集，作者已算好的基因活性矩阵）两个 assay；`ATAC` 峰矩阵在脚本内被丢弃以省内存 |
+| `output/fig1c/results/` | — | 产物目录，脚本自动创建 |
+
+> `atacRNA` 不需要重跑 `GeneActivity()` —— 作者已把它存在对象里。
+> 脚本按器官分批做锚点，避免 115,395 × 115,395 的全局锚点把内存打爆。
 
 ### Fig 2a
 
@@ -98,22 +126,29 @@ Sys.setenv(RICE_RDS_SCRNA = "E:/data/GSE232863_scRNA_omics.Rds")
 | `ref/fig2b_family_palette.rds` | ⬜ | 可选；缺失时用内置 36 色备用配色 |
 | `data/Fig2b_crop.png` | ⬜ | 可选，仅 Step 4 并排对比用 |
 
-> ⚠️ **`primary_markers/` 的生成脚本目前没有随仓库提供**（它属于上游分析步骤，不在本次三张图的范围里）。
+> ⚠️ **`primary_markers/` 的生成脚本目前没有随仓库提供**（它属于上游分析步骤，不在本次四张图的范围里）。
 > 这一点在报告的"复现差异与已知问题"里已如实说明。
 > 补法：对 `obj` 的每个 `tissue_cluster`，`FindMarkers(obj, ident.1 = ct, assay = "ATAC", only.pos = TRUE)`
 > 后 `saveRDS(as.data.frame(mk), file.path(DIR_MK, paste0(gsub("[^A-Za-z0-9]", "_", ct), ".rds")))`。
 > 文件名只需能被 `norm_key()` 规范化后与细胞类型名对上即可。
-
-### Fig 3a
-
-只需 `ref/fig3a/` 下的 9 个 CSV，清单见 [`../../ref/README.md`](../../ref/README.md)。
-**不需要主数据对象** —— 这张图是从数字化矩阵重绘的。
 
 ---
 
 ## 5. 产物一览
 
 ```
+output/fig1b/
+├── Fig1b_reproduced.png / .pdf        左：WNN-UMAP（按 8 器官着色）；右：各器官细胞数
+├── Fig1b_cell_counts.csv              8 器官细胞数 + 与原文 116,564 的逐项差值
+├── Fig1b_consistency_vs_authors.csv   重算 UMAP 与作者存档坐标的一致性检验
+├── Fig1b_umap_coords.csv              画图用的二维坐标（便于第三方复核）
+└── Fig1b_weights_check.csv            WNN 权重矩阵的来源核对
+
+output/fig1c/results/
+├── Fig1c_reproduced.png / .pdf        8 器官 × 2 根横条（实心 = 配对准确率，斜纹 = 多组学 100%）
+├── Fig1c_reproduced.csv               逐器官 accuracy
+└── Fig1c_confusion_<organ>.csv        逐器官混淆矩阵（失败环节分析用）
+
 output/fig2a/
 ├── Fig2a_reproduced.png          2700×2580 @600dpi（报告用）
 ├── Fig2a_reproduced.pdf          4.5×4.3 in 矢量（投稿/放大用）
@@ -128,11 +163,6 @@ output/fig2b/
 ├── Fig2b_deviation_vs_original.png   与原图并排
 ├── cv_top2000_mat.rds                中间结果（不进仓库）
 └── Fig2b_deviation_reproduced_data.rds
-
-output/fig3a/
-├── Fig3a_scRNA_panel.png
-├── Fig3a_scATAC_panel.png
-└── Fig3a_reproduction_exact.png      上下两块 + 完整图例
 ```
 
 ---

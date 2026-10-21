@@ -233,6 +233,7 @@ $$\rho = 1 - \frac{6\sum d_i^2}{n(n^2-1)}$$
 ├── R/
 │   └── figures/                    # ★ 四张图的最终复现脚本（报告里的图由它生成）
 │       ├── 00_selftest.R           #   环境与素材自检（不下载数据，10 秒）
+│       ├── 00b_make_primary_markers.R  # Fig 2b 前置：逐类 ATAC marker 表
 │       ├── _paths.R                #   公共路径配置（Fig2a/2b 用；全仓库无绝对路径）
 │       ├── Fig1b_reproduce.R       #   Fig 1b：WNN-UMAP + 各器官细胞数
 │       ├── Fig1c_reproduce.R       #   Fig 1c：RNA→ATAC 标签迁移的逐器官准确率
@@ -283,6 +284,7 @@ Rscript R/00_setup.R
 Rscript R/figures/Fig1b_reproduce.R         # ~6 min，只读坐标与标签
 Rscript R/figures/Fig1c_reproduce.R         # 30 min 起，跑锚点
 Rscript R/figures/Fig2a_correlation.R       # 2.5 分钟，需 ≥32 GB 内存
+Rscript R/figures/00b_make_primary_markers.R  # Fig 2b 前置：30 min – 1 h
 Rscript R/figures/Fig2b_TF_enrichment.R     # 30 分钟起，需 chromVAR 全家桶
 ```
 
@@ -328,10 +330,63 @@ Fig 1c 最耗时（逐器官跑锚点）；Fig 2a 只需读一次 5.1 GB 对象�
 | **Fig 2b 选 peak 规则与官方脚本不一致** | 正文与图注称 `top 2,000 differential ACRs`；官方 `07.Analyzing_the_TF_and_motif_by_Signac.R` 实际用 `p<0.05 & log2FC>0.5` 阈值筛选，不足 10 个时退回 `top_n(300)`，**代码中没有 2000** | 本复现按正文采用 `TOP_N=2000`，并保留该参数便于切换；该差异影响单个 TF 的分数绝对值，不改变家族分块的整体模式 |
 | Fig 2b 只画 **35** 个细胞类型（不是 56） | 论文正文与图注**均未说明**筛选标准；35 个是 56 个的真子集，缺席 21 个 | 按原图如实复现 35 列，并列为"原文交代不清之处" |
 | **`output/fig2b/Fig2b_vs_original.png` 是早期版本的对比图** | 该图生成时按 56 个细胞类型（原图侧标 54）绘制、行数 253；当前脚本已收窄到原图口径 **254 TF × 35 细胞类型**。统计量与配色相同，差别只在列的取舍 | 图内标注保持原样以便追溯版本；重跑 `Fig2b_TF_enrichment.R` 即得 254×35 版，可直接替换该文件 |
-| Fig 2b 的 `primary_markers/` 无法一键重建 | 该目录由上游步骤（逐细胞类型 `FindMarkers`）产出，不在本次四张图的脚本范围内 | [`R/figures/README.md`](R/figures/README.md) 第 4 节给出补全代码；本 README 如实说明 |
+| Fig 2b 的 `primary_markers/` 需要先跑一次前置步骤 | 该目录由逐细胞类型 `FindMarkers` 产出，与画图无关且耗时较长，故拆成独立脚本 | 已补 [`R/figures/00b_make_primary_markers.R`](R/figures/00b_make_primary_markers.R)，参数逐行对齐官方 07 号脚本；跑一次即缓存。未跑时 `Fig2b_TF_enrichment.R` 会明确报错并指向该脚本 |
 | Fig 2b 家族色带颜色可能与原图有差 | 从原图采样得到的 `ref/fig2b_family_palette.rds` 未随仓库提供 | 脚本自动降级为内置 36 色：**家族分块顺序与位置不变，仅色带颜色不同**（会打印 warning） |
 | **Fig 2b 的绘图代码在官方仓库中缺失** | `07.…R` 只做到 `RunChromVAR()` 与 `FindMotifs()`，第 89–91 行仅切换 `DefaultAssay`，**没有画 Fig 2b 的代码** | 家族分块与块间顺序依据原图图例复原；**块内排序规则原文未披露**，本复现按 TF 活性在细胞类型轴上的加权质心排序，故块内行序与原文不完全一致 |
 | 图写不进 `output/`，报 `unable to translate ... to native encoding` | 仓库放在中文目录时，R 的 `png()` / `pdf()` / `cairo_pdf()` 都把文件名转成本地编码失败 | `_paths.R` 的 `fig_open()` 先试直接写，失败就画到 ASCII 临时文件、`fig_close()` 时再 `file.copy` 过去。**不要改用 `ragg::agg_png()`**：它能写中文路径，但本机退出时 segfault（exit 139） |
 | Fig 2a 基因集与官方不同 | 官方 `VariableFeatures(RNA)` 只覆盖 1,959 个共有基因，样本量不足 | 改为 9,081 个「检出率 ≥5% ∪ 极差 top 6000」，理由见第 1.3 节 |
 | 官方脚本的几处瑕疵 | `06.Correlation_analysis_of_RNA_and_ATAC.R` 把 `VariableFeatures()` 写成 `VarableFeatures()`（R 中无此函数，实际未生效）；用了 `pheatmap::pheatmap()` 却没 `library(pheatmap)`；到处是硬编码绝对路径 `/data2/lidongwei/...` | 本复现逐一修正，并全部改为相对路径 |
-| R 在 Windows 上 `LC_CTYPE=C` 时中文报错会乱码 | `stop()` / `conditionMessage()` 的条件消息会被重编码（`cat()` 直接输出则正常） | `_paths.R` 开头尝试切 locale 修正中文路径显示；**运行时提示文字一律用英文** |
+| R 在 Windows 上 `LC_CTYPE=C` 时中文报错会乱码 | `stop()` / `conditionMessage()` 的条件消息会被重编码（`cat()` 直接输出则正常） | `_paths.R` 开头尝试切 locale 修正中文路径显示；**运行时提示文字一律用英文**（源码里的中文字节会被 GBK 误读，连 `\n` 都会失效） |
+
+---
+
+## 7. 数据与代码来源声明
+
+本节对应课程对"数据来源说明"与学术诚信的要求，逐项说明本仓库中**哪些是别人的、哪些是自己的**。
+
+### 7.1 原始数据（非本项目产生）
+
+| 数据 | 来源 | 获取方式 |
+|---|---|---|
+| 单细胞多组学测序数据（RNA + ATAC，8 器官） | NCBI GEO [**GSE232863**](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE232863) | 作者公开，可匿名下载 |
+| 穗发育阶段数据（SP3–SP8） | GEO **GSE273875** | 同上 |
+| 突变体 RNA-seq | GEO **GSE245410** | 同上 |
+
+本仓库**未重新测序**，全部结果基于上述公开数据的再分析。
+
+### 7.2 官方代码（作者提供，非本项目原创）
+
+- Zenodo：[10.5281/zenodo.15501781](https://doi.org/10.5281/zenodo.15501781)（单细胞多组学分析代码）
+- GitHub：`dongwei-2023/Single_cell_multiomics_in_rice`
+- 本仓库 `data/official_code/` 下保留原始脚本副本，**仅用于对照**，不参与运行
+
+### 7.3 本仓库的原创部分
+
+| 内容 | 说明 |
+|---|---|
+| `R/figures/*.R` | 参考官方代码改写。**脚本头部逐处标注了对应的官方脚本与行号**；改动点（Fig 2a 的基因集选择、Fig 2b 的色标映射、Fig 1b/1c 的路径与内存适配）在第 1 节与第 6 节说明 |
+| `ref/*.csv` | 从论文 PDF 矢量图层反演得到的色标与数值表，方法见 [`ref/README.md`](ref/README.md) 第 3 节，可复核 |
+| `reports/*.docx` | 自行撰写 |
+
+### 7.4 图版版权
+
+原论文图版（Fig 1–5、Extended Data 各图）版权归 Nature / 原作者所有。
+本仓库**不存储原图**，仅保存从图中反演出的**色标数值**（几十 KB 的 CSV）用于复现配色。
+`figs/` 目录已在 `.gitignore` 中排除。
+
+### 7.5 生成式 AI 辅助说明
+
+脚本的语法检查、文档整理与语言润色过程中使用了 AI 辅助工具；
+**分析方案的选择、参数的确定、结果的核验与结论的判断由作者完成**。
+本仓库所有数值结论均可用其中的脚本重新生成并核对。
+
+### 7.6 可复现性边界（如实说明）
+
+| 类别 | 内容 |
+|---|---|
+| **可直接复现** | Fig 1b / 1c / 2a / 2b 的图，前提是已下载 5.1 GB 主数据对象并装好相应 R 包 |
+| **无法完全复现** | Fig 1c 的**绝对准确率**（原文口径有三处歧义，见第 6 节）；Fig 2b 的**原始数值**（原文统计口径三处不一致，本复现用 chromVAR 代理） |
+| **未复现** | 论文 Fig 3–5、Extended Data 各图、pySCENIC 的 251 个 regulon、CellOracle 扰动模拟 |
+
+> **一句话**：这个仓库复现的是**四张图的生成过程与差异归因**，不是整篇论文的结论。
+> 凡是无法完全对齐的地方，第 6 节逐条写明了原因，没有隐去。

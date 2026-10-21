@@ -24,6 +24,7 @@
 | `Fig1c_reproduce.R` | **Fig. 1c** | RNA→ATAC 标签迁移的逐器官准确率（8 器官 × 2 根横条） | 30 min – 2 h | Seurat 5 / Signac / ggpattern / dplyr，内存 ≥16 GB |
 | `Fig2a_correlation.R` | **Fig. 2a** | scRNA vs scATAC 细胞类型平均谱的 Spearman 相关热图，56×56 | ~2.5 min | Seurat 5 / Signac / ComplexHeatmap，内存 ≥32 GB |
 | `Fig2b_TF_enrichment.R` | **Fig. 2b** | 254 TF × 35 细胞类型的 motif deviation score 热图，按 36 个 TF 家族分块 | 30 min – 3 h | 上面这些 + chromVAR / motifmatchr / BSgenome.Osativa.MSU.MSU7 |
+| `00b_make_primary_markers.R` | （Fig 2b 前置） | 为每个细胞类型在 ATAC assay 上跑 `FindMarkers`，产出 `primary_markers/*.rds` | 30 min – 1 h | Seurat / Signac |
 
 **建议的验证顺序**：先跑 `00_selftest.R` 看就绪状态 → 再跑 `Fig1b`（只读元数据与坐标，最快出图）
 → 然后 `Fig1c`（要跑锚点，最久）→ 再 `Fig2a`（2.5 分钟）→ 最后 `Fig2b`（需要 chromVAR 全家桶）。
@@ -126,11 +127,18 @@ Sys.setenv(RICE_RDS_SCRNA = "E:/data/GSE232863_scRNA_omics.Rds")
 | `ref/fig2b_family_palette.rds` | ⬜ | 可选；缺失时用内置 36 色备用配色 |
 | `data/Fig2b_crop.png` | ⬜ | 可选，仅 Step 4 并排对比用 |
 
-> ⚠️ **`primary_markers/` 的生成脚本目前没有随仓库提供**（它属于上游分析步骤，不在本次四张图的范围里）。
-> 这一点在报告的"复现差异与已知问题"里已如实说明。
-> 补法：对 `obj` 的每个 `tissue_cluster`，`FindMarkers(obj, ident.1 = ct, assay = "ATAC", only.pos = TRUE)`
-> 后 `saveRDS(as.data.frame(mk), file.path(DIR_MK, paste0(gsub("[^A-Za-z0-9]", "_", ct), ".rds")))`。
-> 文件名只需能被 `norm_key()` 规范化后与细胞类型名对上即可。
+> **`primary_markers/` 由 `00b_make_primary_markers.R` 生成**（30 min – 1 h）：
+>
+> ```bash
+> Rscript R/figures/00b_make_primary_markers.R
+> ```
+>
+> 该脚本逐行对齐官方 `07.Analyzing_the_TF_and_motif_by_Signac.R` 的 `FindMarkers` 参数
+> （`test.use = "LR"`、`only.pos = TRUE`、`logfc.threshold = 0.05`、
+> `max.cells.per.ident = 300`、`latent.vars = "nCount_ATAC"`），
+> 每类存一张表到 `output/fig2b/primary_markers/<细胞类型>.rds`。
+> 表里的行名就是 peak 坐标，`Fig2b_TF_enrichment.R` 用 `rownames()` 直接 match。
+> 跑过一次即缓存，重画 Fig 2b 不需要再跑（`FORCE=1` 可强制重算）。
 
 ---
 

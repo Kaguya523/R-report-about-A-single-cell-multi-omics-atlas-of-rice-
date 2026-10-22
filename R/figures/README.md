@@ -1,6 +1,6 @@
-# `R/figures/` —— 四张核心图的最终复现脚本
+# `R/figures/` —— 三张核心图的最终复现脚本
 
-这个子目录放的是**报告里那四张图的实际生成脚本**，也就是"最终交付版"。
+这个子目录放的是**报告里那三张图的实际生成脚本**，也就是"最终交付版"。
 
 和 `R/` 根目录下的 `02_` / `03_` / `04_` / `05_` 的区别：
 
@@ -15,19 +15,17 @@
 
 ---
 
-## 1. 五个脚本
+## 1. 四个脚本
 
 | 脚本 | 对应图 | 内容 | 运行时间 | 依赖 |
 |---|---|---|---|---|
-| `00_selftest.R` | — | **先跑这个**：检查路径 / 参考表 / 原始数据 / R 包，打印四张图的就绪状态 | 10 s | 无 |
+| `00_selftest.R` | — | **先跑这个**：检查路径 / 参考表 / 原始数据 / R 包，打印三张图的就绪状态 | 10 s | 无 |
 | `Fig1b_reproduce.R` | **Fig. 1b** | 全细胞 WNN-UMAP（按 8 个器官着色）+ 各器官细胞数条形图 | ~6 min | Seurat 5 / Signac / ggplot2 / patchwork / dplyr，内存 ≥16 GB |
 | `Fig1c_reproduce.R` | **Fig. 1c** | RNA→ATAC 标签迁移的逐器官准确率（8 器官 × 2 根横条） | 30 min – 2 h | Seurat 5 / Signac / ggpattern / dplyr，内存 ≥16 GB |
 | `Fig2a_correlation.R` | **Fig. 2a** | scRNA vs scATAC 细胞类型平均谱的 Spearman 相关热图，56×56 | ~2.5 min | Seurat 5 / Signac / ComplexHeatmap，内存 ≥32 GB |
-| `Fig2b_TF_enrichment.R` | **Fig. 2b** | 254 TF × 35 细胞类型的 motif deviation score 热图，按 36 个 TF 家族分块 | 30 min – 3 h | 上面这些 + chromVAR / motifmatchr / BSgenome.Osativa.MSU.MSU7 |
-| `00b_make_primary_markers.R` | （Fig 2b 前置） | 为每个细胞类型在 ATAC assay 上跑 `FindMarkers`，产出 `primary_markers/*.rds` | 30 min – 1 h | Seurat / Signac |
 
 **建议的验证顺序**：先跑 `00_selftest.R` 看就绪状态 → 再跑 `Fig1b`（只读元数据与坐标，最快出图）
-→ 然后 `Fig1c`（要跑锚点，最久）→ 再 `Fig2a`（2.5 分钟）→ 最后 `Fig2b`（需要 chromVAR 全家桶）。
+→ 然后 `Fig1c`（要跑锚点，最久）→ 最后 `Fig2a`（2.5 分钟）。
 
 ---
 
@@ -41,7 +39,6 @@ Rscript R/figures/00_selftest.R              # 10 秒，先看能不能跑
 Rscript R/figures/Fig1b_reproduce.R          # 约 6 分钟
 Rscript R/figures/Fig1c_reproduce.R          # 30 分钟起
 Rscript R/figures/Fig2a_correlation.R        # 2.5 分钟
-Rscript R/figures/Fig2b_TF_enrichment.R      # 30 分钟起
 ```
 
 也可以在 `R/figures/` 目录内直接 `Rscript Fig2a_correlation.R`，脚本会自动找到 `_paths.R`。
@@ -62,9 +59,9 @@ Sys.setenv(RICE_RDS_SCRNA = "E:/data/GSE232863_scRNA_omics.Rds")
 
 ## 3. 路径约定（重要）
 
-四张图的脚本都**不写死绝对路径**，但定位方式分两种：
+三张图的脚本都**不写死绝对路径**，但定位方式分两种：
 
-- `Fig2a` / `Fig2b`：`source("_paths.R")`，由它向上查找仓库根目录；
+- `Fig2a`：`source("_paths.R")`，由它向上查找仓库根目录；
 - `Fig1b` / `Fig1c`：默认读仓库相对路径 `data/…` 与 `output/…`，可用环境变量覆盖
   （`RICE_RDS_SCRNA` / `RICE_OUT_FIG1B` / `RICE_OUT_FIG1C`）。
 
@@ -117,29 +114,6 @@ Sys.setenv(RICE_RDS_SCRNA = "E:/data/GSE232863_scRNA_omics.Rds")
 | `ref/fig2a_dots.csv` | ✅ | 已提交 |
 | `ref/fig2a_matrix_values_exact.csv` | ⬜ | 可选，仅用于打印逐格比对指标 |
 
-### Fig 2b
-
-| 文件 | 必需 | 说明 |
-|---|---|---|
-| `data/GSE232863_scRNA_omics.Rds` | ✅ | 同上 |
-| `data/official_code/dongwei-2023-Single_Cell_Multiomics_in_Rice-6020ed1/data/rice.motif.pfmList2.Rds` | ✅ | 官方代码包（Zenodo `10.5281/zenodo.15501781`）里的 PlantTFDB motif PFM |
-| `output/fig2b/primary_markers/*.rds` | ✅ | **前置步骤产出**：对每个细胞类型在 ATAC assay 上跑 `FindMarkers`，存成含 `avg_log2FC` 列、行名为 peak 坐标的表 |
-| `ref/fig2b_family_palette.rds` | ⬜ | 可选；缺失时用内置 36 色备用配色 |
-| `data/Fig2b_crop.png` | ⬜ | 可选，仅 Step 4 并排对比用 |
-
-> **`primary_markers/` 由 `00b_make_primary_markers.R` 生成**（30 min – 1 h）：
->
-> ```bash
-> Rscript R/figures/00b_make_primary_markers.R
-> ```
->
-> 该脚本逐行对齐官方 `07.Analyzing_the_TF_and_motif_by_Signac.R` 的 `FindMarkers` 参数
-> （`test.use = "LR"`、`only.pos = TRUE`、`logfc.threshold = 0.05`、
-> `max.cells.per.ident = 300`、`latent.vars = "nCount_ATAC"`），
-> 每类存一张表到 `output/fig2b/primary_markers/<细胞类型>.rds`。
-> 表里的行名就是 peak 坐标，`Fig2b_TF_enrichment.R` 用 `rownames()` 直接 match。
-> 跑过一次即缓存，重画 Fig 2b 不需要再跑（`FORCE=1` 可强制重算）。
-
 ---
 
 ## 5. 产物一览
@@ -165,12 +139,6 @@ output/fig2a/
 ├── Fig2a_axis_mapping.csv        原图编号 ↔ GEO final_id2 ↔ 器官 的对照
 ├── Fig2a_best_geneset_summary.csv 基因集各步的基因数
 └── Fig2a_C_per_tissue.csv        逐组织的对角/组织内/跨组织偏差
-
-output/fig2b/
-├── Fig2b_deviation_reproduced.png / .pdf
-├── Fig2b_deviation_vs_original.png   与原图并排
-├── cv_top2000_mat.rds                中间结果（不进仓库）
-└── Fig2b_deviation_reproduced_data.rds
 ```
 
 ---
